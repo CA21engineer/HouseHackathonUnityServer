@@ -45,6 +45,7 @@ CI/CDに必要
 - SSH_HOST
 
     ssh接続するGCEサーバーの外部IP
+    terraformでインスタンス作成した後判明する外部IP
 
 - SSH_PORT
 
