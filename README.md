@@ -1,0 +1,52 @@
+# HouseHackathonUnityServer
+
+## ローカル動作確認
+```bash
+$ chmod +x run-local.sh
+$ ./run-local.sh
+...
+// 初回はめっちゃ時間かかる...
+
+$ curl -X GET localhost:18080/health
+OK
+```
+
+## 設定すべき環境変数
+CI/CDに必要
+
+- GOOGLE_PROJECT_ID
+- GOOGLE_COMPUTE_REGION
+
+    例: asia-northeast1
+
+- GOOGLE_COMPUTE_ZONE
+
+    例: asia-northeast1-a
+
+- GOOGLE_SERVICE_KEY
+
+    サービスアカンウトをbase64エンコードした文字列
+    `base64 -i [.json file path]`
+
+- SSH_USERNAME
+
+    sshユーザーネーム
+
+- SSH_KEY
+
+    ssh秘密鍵をbase64エンコードした文字列
+    `base64 -i my-ssh-key`
+
+- SSH_KEY_PUB
+
+    ssh公開鍵をbase64エンコードした文字列
+    `base64 -i my-ssh-key.pub`
+
+- SSH_HOST
+
+    ssh接続するGCEサーバーの外部IP
+
+- SSH_PORT
+
+    ssh接続のポート
+    空いていればなんでもよい。基本は22だがセキュリティー上変更した方がいい

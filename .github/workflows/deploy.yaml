@@ -1,0 +1,31 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy-gce:
+    name: deploy docker-compose to gce
+    runs-on: ubuntu-latest
+    env:
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_KEY_PUB: ${{ secrets.SSH_KEY_PUB }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo ${SSH_KEY} | base64 -d > ~/.ssh/my-ssh-key
+          echo ${SSH_KEY_PUB} | base64 -d > ~/.ssh/my-ssh-key.pub
+          chmod 600 ~/.ssh/my-ssh-key
+      - name: Deploy api server
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/my-ssh-key
+          ssh -o "StrictHostKeyChecking=no" -p ${SSH_PORT} ${SSH_USERNAME}@${SSH_HOST}  -i ~/.ssh/my-ssh-key 'bash -s' < deploy.sh https://${SSH_USERNAME}:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}
+
