@@ -2,7 +2,7 @@
 val sdk8 = "adoptopenjdk/openjdk8:x86_64-ubuntu-jdk8u212-b03-slim"
 
 lazy val apiServer = (project in file("apiServer"))
-  .enablePlugins(JavaAppPackaging, AshScriptPlugin, DockerPlugin)
+  .enablePlugins(JavaAppPackaging, AshScriptPlugin, DockerPlugin, AkkaGrpcPlugin, JavaAgent)
   .settings(
     name := "HouseHackathonUnityServer",
     version := "0.1",
