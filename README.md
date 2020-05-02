@@ -1,12 +1,22 @@
 # HouseHackathonUnityServer
 
+## 資料
+- [議事録](https://github.com/CA21engineer/HouseHackathonUnityClient/issues/1)
+
+## APIServer情報
+- Host: 35.243.119.173
+- Port: 18080
+```bash
+$ curl -X GET 35.243.119.173:18080/health
+OK
+```
+
 ## ローカル動作確認
 ```bash
 $ chmod +x run-local.sh
 $ ./run-local.sh
 ...
 // 初回はめっちゃ時間かかる...
-
 $ curl -X GET localhost:18080/health
 OK
 ```
