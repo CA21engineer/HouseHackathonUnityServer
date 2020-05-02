@@ -2,7 +2,7 @@
 
 cd `dirname $0`
 
-if type "sbt-aaa" > /dev/null 2>&1; then
+if type "sbt" > /dev/null 2>&1; then
   sbt clean docker:stage
 else
   if type "docker image inspect hseeberger/scala-sbt:8u222_1.3.10_2.12.8" > /dev/null 2>&1; then
@@ -26,7 +26,7 @@ else
 fi
 
 
-if type "docker-compose-aaa" > /dev/null 2>&1; then
+if type "docker-compose" > /dev/null 2>&1; then
   docker-compose -f docker-compose.yaml up --build -d
 else
   docker run \
