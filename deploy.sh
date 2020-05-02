@@ -39,7 +39,7 @@ else
   sbt clean docker:stage
 fi
 
-chmod +x apiServer/target/docker/stage
+sudo chmod 700 apiServer/target/docker/stage/opt/docker/bin/house-hackathon-uity-server
 
 if type "docker-compose" > /dev/null 2>&1; then
   docker-compose -f docker-compose.yaml up --build -d
