@@ -39,6 +39,7 @@ else
   sbt clean docker:stage
 fi
 
+chmod +x apiServer/target/docker/stage
 
 if type "docker-compose" > /dev/null 2>&1; then
   docker-compose -f docker-compose.yaml up --build -d
