@@ -11,6 +11,10 @@ $ curl -X GET localhost:18080/health
 OK
 ```
 
+## ssh鍵作成
+
+`$ ssh-keygen -t rsa -f my-ssh-key -C [任意のsshユーザーネーム]`
+
 ## 設定すべき環境変数
 CI/CDに必要
 
