@@ -18,10 +18,15 @@ lazy val apiServer = (project in file("apiServer"))
     dockerUsername := Some("bambootuna"),
     mainClass in (Compile, bashScriptDefines) := Some("com.github.CA21engineer.HouseHackathonUnityServer.apiServer.Main"),
     packageName in Docker := name.value,
-    dockerExposedPorts := Seq(18080)
+    dockerExposedPorts := Seq(18080),
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.7" % "runtime"
   )
   .settings(
     libraryDependencies ++= Seq(
+      ScalaTest.version     % Test,
+      ScalaCheck.scalaCheck % Test,
+      ScalaMock.version     % Test,
+      Akka.testkit     % Test,
       Circe.core,
       Circe.generic,
       Circe.parser,
