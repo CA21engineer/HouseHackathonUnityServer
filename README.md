@@ -39,42 +39,98 @@ $ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.p
 Response contents:
 {
   "createRoomResponse": {
-    "RoomId": "mock_room_id"
+    "RoomId": "roomId"
   }
 }
-
+...
+2 seconds
+...
 Response contents:
 {
   "joinRoomResponse": {
-    "RoomId": "mock_room_id"
+    "RoomId": "roomId"
   }
 }
-
+...
+2 seconds
+...
 Response contents:
 {
   "readyResponse": {
     "Member": [
       {
-        "AccountId": "bambootuna"
+        "AccountId": "user1"
+      },
+      {
+        "AccountId": "user2"
+      },
+      {
+        "AccountId": "user3"
+      },
+      {
+        "AccountId": "user4"
       }
     ],
-    "date": "2020-05-03T03:57:57.812Z"
+    "date": "2020-05-03T12:37:14.010Z"
   }
 }
 
 ```
 
-### ConnectPlayingData
+### JoinRoom
 ```bash
-// rpc ConnectPlayingData(stream PlayingData) returns (stream PlayingData) {};
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"roomId","Coordinate":{"x":0,"y":0,"date":"2020-05-03T03:57:57.812Z"}}' ${SERVER_ENDPOINT} room.RoomService/ConnectPlayingData
+// rpc JoinRoom(JoinRoomRequest) returns (stream RoomResponse) {};
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"bambootuna","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
 
 Response contents:
 {
-  "RoomId": "roomId",
-  "Coordinate": {
-    "date": "2020-05-03T03:57:57.812Z"
+  "createRoomResponse": {
+    "RoomId": "roomId"
   }
+}
+...
+2 seconds
+...
+Response contents:
+{
+  "joinRoomResponse": {
+    "RoomId": "roomId"
+  }
+}
+...
+2 seconds
+...
+Response contents:
+{
+  "readyResponse": {
+    "Member": [
+      {
+        "AccountId": "user1"
+      },
+      {
+        "AccountId": "user2"
+      },
+      {
+        "AccountId": "user3"
+      },
+      {
+        "AccountId": "user4"
+      }
+    ],
+    "date": "2020-05-03T12:38:41.522Z"
+  }
+}
+
+```
+
+### CoordinateSharing
+```bash
+// rpc CoordinateSharing(stream Coordinate) returns (stream Coordinate) {};
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"x":0,"y":0,"date":"2020-05-03T03:57:57.812Z"}' -H 'roomid: roomId' -H 'accountid: accountId' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
+
+Response contents:
+{
+  "date": "2020-05-03T03:57:57.812Z"
 }
 
 ```
@@ -82,7 +138,7 @@ Response contents:
 ### ChildOperation
 ```bash
 // rpc ChildOperation(stream Operation) returns (Empty) {};
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"roomId","Direction":0,"strength":0.12345}' ${SERVER_ENDPOINT} room.RoomService/ChildOperation
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"Direction":0,"strength":0.12345}' -H 'roomid: roomId' -H 'accountid: accountId' ${SERVER_ENDPOINT} room.RoomService/ChildOperation
 
 Response contents:
 {
@@ -93,14 +149,14 @@ Response contents:
 ### ParentOperation
 ```bash
 // rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"roomId"}' ${SERVER_ENDPOINT} room.RoomService/ParentOperation
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"roomId","AccountId":"accountId"}' ${SERVER_ENDPOINT} room.RoomService/ParentOperation
 
 
 Response contents:
 {
-  "RoomId": "roomId",
   "strength": 0.1
 }
+
 
 ...
 2 seconds

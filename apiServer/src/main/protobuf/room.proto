@@ -53,14 +53,14 @@ enum Direction {
     Right =3;
 }
 
-// require MetaData: string RoomId, string AccountId
+// require MetaData: string roomid, string accountid
 message Coordinate {
     float x = 1;
     float y = 2;
     string date = 3; // google.protobuf.Timestamp
 }
 
-// require MetaData: string RoomId, string AccountId
+// require MetaData: string roomid, string accountid
 message Operation {
     Direction Direction = 1;
     float strength = 2; // 0 ~ 1

@@ -57,16 +57,16 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
   }
 
   override def coordinateSharing(in: Source[Coordinate, NotUsed], metadata: Metadata): Source[Coordinate, NotUsed] = {
-    (metadata.getText("RoomId"), metadata.getText("AccountId")) match {
+    (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(_), Some(_)) =>
         in
-      case _ =>
+      case (l, r) =>
         Source.empty
     }
   }
 
   override def childOperation(in: Source[Operation, NotUsed], metadata: Metadata): Future[Empty] = {
-    (metadata.getText("RoomId"), metadata.getText("AccountId")) match {
+    (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(_), Some(_)) =>
         in.runWith(Sink.foreach(println)).map(_ => Empty())(materializer.executionContext)
       case _ =>
