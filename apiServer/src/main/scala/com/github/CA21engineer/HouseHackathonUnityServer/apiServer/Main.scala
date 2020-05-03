@@ -6,8 +6,8 @@ import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.http.scaladsl.UseHttp2.Always
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
-import com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomServiceHandler
-import com.github.CA21engineer.HouseHackathonUnityServer.service.RoomServiceImpl
+import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room.RoomServicePowerApiHandler
+import com.github.CA21engineer.HouseHackathonUnityServer.service.RoomServicePowerApiImpl
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -23,7 +23,7 @@ object Main extends App {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
-  val roomService: PartialFunction[HttpRequest, Future[HttpResponse]] = RoomServiceHandler.partial(new RoomServiceImpl(materializer))
+  val roomService: PartialFunction[HttpRequest, Future[HttpResponse]] = RoomServicePowerApiHandler.partial(new RoomServicePowerApiImpl)
 
   val serviceHandlers: HttpRequest => Future[HttpResponse] =
     ServiceHandler.concatOrNotFound(roomService)
