@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.github.CA21engineer.HouseHackathonUnityServer.grpc";
+option java_outer_classname = "RoomService";
+
+//import "google/protobuf/timestamp.proto";
+
+package room;
+
+message RoomResponse {
+    oneof response {
+        CreateRoomResponse createRoomResponse = 1;
+        JoinRoomResponse joinRoomResponse = 2;
+        ReadyResponse readyResponse = 3;
+    }
+}
+
+message CreateRoomRequest {
+    string AccountId = 1;
+    string roomKey = 2; // Option
+}
+
+message CreateRoomResponse {
+    string RoomId = 1;
+}
+
+message JoinRoomRequest {
+    string AccountId = 1;
+    string roomKey = 2; // Option
+}
+
+message JoinRoomResponse {
+    string RoomId = 1;
+}
+
+message ReadyResponse {
+    repeated GhostRecord ghostRecord = 1;
+    repeated Member Member = 2;
+    Direction Direction = 3;
+    string date = 4; // google.protobuf.Timestamp
+}
+
+message GhostRecord {
+}
+
+message Member {
+    string AccountId = 1;
+}
+
+enum Direction {
+    Up = 0;
+    Down = 1;
+    Left = 2;
+    Right =3;
+}
+
+
+message PlayingData {
+    string RoomId = 1;
+    Coordinate Coordinate = 2;
+//    string AccountId = 2;
+}
+
+message Coordinate {
+    float x = 1;
+    float y = 2;
+    string date = 3; // google.protobuf.Timestamp
+}
+
+message Operation {
+    string RoomId = 1;
+    Direction Direction = 2;
+    float strength = 3; // 0 ~ 1
+}
+
+message ParentOperationRequest {
+    string RoomId = 1;
+}
+
+message Empty {}
+
+service RoomService {
+
+    rpc CreateRoom(CreateRoomRequest) returns (stream RoomResponse) {};
+    rpc ConnectPlayingData(stream PlayingData) returns (stream PlayingData) {};
+
+    rpc ChildOperation(stream Operation) returns (Empty) {};
+    rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
+}
+
+

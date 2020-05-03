@@ -21,7 +21,8 @@ fi
 #down --rmi all --volumes
 
 if type "sbt" > /dev/null 2>&1; then
-  sbt clean docker:stage
+  sbt clean compile && \
+  sbt docker:stage
 else
   docker build \
     --build-arg BASE_IMAGE_TAG="8u212-b04-jdk-stretch" \
@@ -36,7 +37,8 @@ else
   --rm -v /var/run/docker.sock:/var/run/docker.sock \
   -v "$PWD:/$PWD" -w="/$PWD" \
   hseeberger/scala-sbt:8u222_1.3.10_2.12.8 \
-  sbt clean docker:stage
+  sbt clean compile && \
+  sbt docker:stage
 fi
 
 sudo chmod 700 apiServer/target/docker/stage/opt/docker/bin/house-hackathon-uity-server

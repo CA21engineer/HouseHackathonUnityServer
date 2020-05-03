@@ -1,19 +1,40 @@
 package com.github.CA21engineer.HouseHackathonUnityServer.apiServer
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
+import akka.grpc.scaladsl.ServiceHandler
+import akka.http.scaladsl.{Http, HttpConnectionContext}
+import akka.http.scaladsl.UseHttp2.Always
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
+import com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomServiceHandler
+import com.github.CA21engineer.HouseHackathonUnityServer.service.{RoomAggregate, RoomAggregates, RoomServiceImpl}
+import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object Main extends App {
 
-  implicit val system: ActorSystem = ActorSystem("HouseHackathonUnityServer")
+  val conf =
+    ConfigFactory
+      .parseString("akka.http.server.preview.enable-http2 = on")
+      .withFallback(ConfigFactory.defaultApplication())
+
+  implicit val system: ActorSystem = ActorSystem("HouseHackathonUnityServer", conf)
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
+  val roomService: PartialFunction[HttpRequest, Future[HttpResponse]] = RoomServiceHandler.partial(new RoomServiceImpl(materializer))
+
+  val serviceHandlers: HttpRequest => Future[HttpResponse] =
+    ServiceHandler.concatOrNotFound(roomService)
+
   val bindingFuture =
-    Http().bindAndHandle(Routes.toRoutes.create, "0.0.0.0", 18080)
+    Http().bindAndHandleAsync(
+      handler = serviceHandlers,
+      interface = "0.0.0.0",
+      port = 18080,
+      connectionContext = HttpConnectionContext(http2 = Always)
+    )
 
   sys.addShutdownHook {
     bindingFuture
