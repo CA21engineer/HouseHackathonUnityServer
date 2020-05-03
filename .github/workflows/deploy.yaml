@@ -14,6 +14,7 @@ jobs:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -27,5 +28,5 @@ jobs:
         run: |
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/my-ssh-key
-          ssh -o "StrictHostKeyChecking=no" -p ${SSH_PORT} ${SSH_USERNAME}@${SSH_HOST}  -i ~/.ssh/my-ssh-key 'bash -s' < deploy.sh https://BambooTuna:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}
+          ssh -o "StrictHostKeyChecking=no" -p ${SSH_PORT} ${SSH_USERNAME}@${SSH_HOST}  -i ~/.ssh/my-ssh-key 'bash -s' < deploy.sh https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}
 
