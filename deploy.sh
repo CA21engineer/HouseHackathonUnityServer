@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd `dirname $0`
-
 # 第一引数はgitリポジトリを指定(以下例)
 # sh deploy.sh https://github.com/dockersamples/example-voting-app
 
