@@ -11,9 +11,9 @@
 ※モックを組み込んでいるので本番とはレスポンスが違う
 
 ```bash
-$ export SERVER_ENDPOINT=http://localhost:18080
+$ export SERVER_ENDPOINT=localhost:18080
 or
-$ export SERVER_ENDPOINT=http://35.243.119.173:18080
+$ export SERVER_ENDPOINT=35.243.119.173:18080
 ```
 
 1. build, run
