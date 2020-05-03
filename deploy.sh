@@ -5,7 +5,7 @@
 
 # 初回のみClone、以降はPullする
 if cd app; then
-  git pull;
+  git pull $1;
 else
   git clone $1 app
   cd app
