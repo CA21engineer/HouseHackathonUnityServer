@@ -35,8 +35,8 @@ message JoinRoomResponse {
 }
 
 message ReadyResponse {
-    GhostRecord ghostRecord = 1; // Option
-    MemberList MemberList = 2;
+    repeated GhostRecord ghostRecord = 1;
+    repeated Member Member = 2;
     Direction Direction = 3;
     string date = 4; // google.protobuf.Timestamp
 }
@@ -44,8 +44,8 @@ message ReadyResponse {
 message GhostRecord {
 }
 
-message MemberList {
-//    repeated string AccountId = 1;
+message Member {
+    string AccountId = 1;
 }
 
 enum Direction {
