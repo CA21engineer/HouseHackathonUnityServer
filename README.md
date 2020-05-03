@@ -1,5 +1,12 @@
 # HouseHackathonUnityServer
 
+## 資料
+- [議事録](https://github.com/CA21engineer/HouseHackathonUnityClient/issues/1)
+
+## APIServer情報
+- Host: 35.243.119.173
+- Port: 18080
+
 ## 動作確認
 ※モックを組み込んでいるので本番とはレスポンスが違う
 
@@ -10,6 +17,7 @@ $ export SERVER_ENDPOINT=http://35.243.119.173:18080
 ```
 
 1. build, run
+
 ```bash
 $ chmod +x run-local.sh
 $ ./run-local.sh
