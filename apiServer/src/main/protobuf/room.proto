@@ -18,9 +18,8 @@ message RoomResponse {
 
 message CreateRoomRequest {
     string AccountId = 1;
-    string roomKey = 2; // Option
+    string roomKey = 2; // Optional
 }
-
 message CreateRoomResponse {
     string RoomId = 1;
 }
@@ -29,7 +28,6 @@ message JoinRoomRequest {
     string AccountId = 1;
     string roomKey = 2; // Option
 }
-
 message JoinRoomResponse {
     string RoomId = 1;
 }
@@ -55,27 +53,22 @@ enum Direction {
     Right =3;
 }
 
-
-message PlayingData {
-    string RoomId = 1;
-    Coordinate Coordinate = 2;
-//    string AccountId = 2;
-}
-
+// require MetaData: string RoomId, string AccountId
 message Coordinate {
     float x = 1;
     float y = 2;
     string date = 3; // google.protobuf.Timestamp
 }
 
+// require MetaData: string RoomId, string AccountId
 message Operation {
-    string RoomId = 1;
-    Direction Direction = 2;
-    float strength = 3; // 0 ~ 1
+    Direction Direction = 1;
+    float strength = 2; // 0 ~ 1
 }
 
 message ParentOperationRequest {
     string RoomId = 1;
+    string AccountId = 2;
 }
 
 message Empty {}
@@ -83,7 +76,9 @@ message Empty {}
 service RoomService {
 
     rpc CreateRoom(CreateRoomRequest) returns (stream RoomResponse) {};
-    rpc ConnectPlayingData(stream PlayingData) returns (stream PlayingData) {};
+    rpc JoinRoom(JoinRoomRequest) returns (stream RoomResponse) {};
+
+    rpc CoordinateSharing(stream Coordinate) returns (stream Coordinate) {};
 
     rpc ChildOperation(stream Operation) returns (Empty) {};
     rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
