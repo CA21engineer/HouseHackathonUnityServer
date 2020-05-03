@@ -7,7 +7,7 @@ import akka.http.scaladsl.UseHttp2.Always
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
 import com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomServiceHandler
-import com.github.CA21engineer.HouseHackathonUnityServer.service.{RoomAggregate, RoomAggregates, RoomServiceImpl}
+import com.github.CA21engineer.HouseHackathonUnityServer.service.RoomServiceImpl
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
