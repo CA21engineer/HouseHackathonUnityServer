@@ -4,7 +4,9 @@ option java_multiple_files = true;
 option java_package = "com.github.CA21engineer.HouseHackathonUnityServer.grpc";
 option java_outer_classname = "RoomService";
 
-import "google/protobuf/timestamp.proto";
+//import "google/protobuf/timestamp.proto";
+
+package room;
 
 message RoomResponse {
     oneof response {
@@ -16,7 +18,7 @@ message RoomResponse {
 
 message CreateRoomRequest {
     string AccountId = 1;
-    string RoomKey = 2; // Option
+    string roomKey = 2; // Option
 }
 
 message CreateRoomResponse {
@@ -25,7 +27,7 @@ message CreateRoomResponse {
 
 message JoinRoomRequest {
     string AccountId = 1;
-    string RoomKey = 2; // Option
+    string roomKey = 2; // Option
 }
 
 message JoinRoomResponse {
@@ -34,9 +36,9 @@ message JoinRoomResponse {
 
 message ReadyResponse {
     GhostRecord ghostRecord = 1; // Option
-    MemberList memberList = 2;
-    Direction direction = 3;
-    google.protobuf.Timestamp date = 4;
+    MemberList MemberList = 2;
+    Direction Direction = 3;
+    string date = 4; // google.protobuf.Timestamp
 }
 
 message GhostRecord {
@@ -56,16 +58,19 @@ enum Direction {
 
 message PlayingData {
     string RoomId = 1;
-    Coordinate coordinate = 2;
+    Coordinate Coordinate = 2;
 //    string AccountId = 2;
 }
 
 message Coordinate {
+    float x = 1;
+    float y = 2;
+    string date = 3; // google.protobuf.Timestamp
 }
 
 message Operation {
     string RoomId = 1;
-    Direction direction = 2;
+    Direction Direction = 2;
     float strength = 3; // 0 ~ 1
 }
 
