@@ -6,46 +6,45 @@ import akka.stream.scaladsl.Source
 
 import scala.util.{Failure, Success, Try}
 
-class RoomAggregates {
-  val rooms: scala.collection.mutable.Map[String, RoomAggregate] = scala.collection.mutable.Map.empty
+class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
+  val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
 
   def generateRoomId(): String =
     java.util.UUID.randomUUID.toString.replaceAll("-", "")
 
-  def createRoom[T](authorAccountId: String, roomKey: Option[String])(implicit materializer: Materializer): Source[T, NotUsed] = {
-    val (roomAggregate, source) = RoomAggregate.create(authorAccountId, roomKey)
+  /** ルーム作成の時に呼ばれる
+   *
+   *  actorRef
+   *
+   *  @param authorAccountId ルーム作成者ID
+   *  @param roomKey ルームの合言葉: Some -> プラーベートなルーム, None -> パブリックなルーム
+   *  @return
+   */
+  def createRoom(authorAccountId: String, roomKey: Option[String]): Source[T, NotUsed] = {
+    val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey)
     rooms(generateRoomId()) = roomAggregate
     source
   }
 
-  def searchVacantRoom(): Try[(String, RoomAggregate)] = {
-    this.rooms.find(_._2.canParticipate)
+  def searchVacantRoom(roomKey: Option[String]): Try[(String, RoomAggregate[T, Coordinate, Operation])] = {
+    this.rooms.find(_._2.canParticipate(roomKey))
       .map(Success(_)).getOrElse(Failure(new Exception("参加可能な部屋がありません")))
   }
 
-  def searchPrivateRoom(roomKey: String): Try[(String, RoomAggregate)] = {
-    this.rooms.find(a => a._2.roomKey.contains(roomKey) && a._2.canParticipate)
-      .map(Success(_)).getOrElse(Failure(new Exception("参加可能な部屋がありません")))
+  def getRoomAggregate(roomId: String, accountId: String): Option[RoomAggregate[T, Coordinate, Operation]] = {
+    this.rooms
+      .get(roomId)
+      .filter(a => a.children.exists(_._1 == accountId))
   }
 
-  def joinRandomly(accountId: String): Try[String] =
+  def joinRoom(accountId: String, roomKey: Option[String]): Try[Source[T, NotUsed]] =
     for {
-      (roomId, roomAggregate) <- this.searchVacantRoom()
-      newRoomAggregate <- roomAggregate.joinRoom(accountId, None)
+      (roomId, roomAggregate) <- this.searchVacantRoom(roomKey)
+      newRoomAggregate <- roomAggregate.joinRoom(accountId, roomKey)
     } yield {
-      this.rooms.update(roomId, newRoomAggregate)
-      roomId
+      this.rooms.update(roomId, newRoomAggregate._1)
+      newRoomAggregate._2
     }
-
-  def joinPrivateRoom(accountId: String, roomKey: String): Try[String] = {
-    for {
-      (roomId, roomAggregate) <- this.searchPrivateRoom(roomKey)
-      newRoomAggregate <- roomAggregate.joinRoom(accountId, Some(roomKey))
-    } yield {
-      this.rooms.update(roomId, newRoomAggregate)
-      roomId
-    }
-  }
 
 }
 
