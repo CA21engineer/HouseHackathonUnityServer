@@ -27,5 +27,5 @@ jobs:
         run: |
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/my-ssh-key
-          ssh -o "StrictHostKeyChecking=no" -p ${SSH_PORT} ${SSH_USERNAME}@${SSH_HOST}  -i ~/.ssh/my-ssh-key 'bash -s' < deploy.sh https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}
+          ssh -o "StrictHostKeyChecking=no" -p ${SSH_PORT} ${SSH_USERNAME}@${SSH_HOST}  -i ~/.ssh/my-ssh-key 'bash -s' < deploy.sh https://BambooTuna:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}
 
