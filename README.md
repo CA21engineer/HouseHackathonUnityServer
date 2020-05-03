@@ -17,6 +17,7 @@ $ export SERVER_ENDPOINT=35.243.119.173:18080
 ```
 
 1. build, run
+※ローカルでサーバー起動するときのみ
 
 ```bash
 $ chmod +x run-local.sh
