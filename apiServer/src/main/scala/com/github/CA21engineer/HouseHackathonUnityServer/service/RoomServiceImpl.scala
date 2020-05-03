@@ -1,65 +1,64 @@
 package com.github.CA21engineer.HouseHackathonUnityServer.service
 
 import akka.NotUsed
+import akka.actor.Status
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import com.github.CA21engineer.HouseHackathonUnityServer.grpc.{CreateRoomRequest, Empty, Operation, ParentOperationRequest, PlayingData, RoomResponse, RoomService}
+import akka.stream.scaladsl.{Sink, Source}
+import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
+import akka.grpc.scaladsl.Metadata
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
-// Mock
-class RoomServiceImpl(materializer: Materializer) extends RoomService {
-  override def createRoom(in: CreateRoomRequest): Source[RoomResponse, NotUsed] = {
-    println("received CreateRoomRequest: ", in.toString)
-    Source(List(
-      com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomResponse(
-        com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomResponse.Response.CreateRoomResponse(
-          com.github.CA21engineer.HouseHackathonUnityServer.grpc.CreateRoomResponse("mock_room_id")
-        )
-      ),
-      com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomResponse(
-        com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomResponse.Response.JoinRoomResponse(
-          com.github.CA21engineer.HouseHackathonUnityServer.grpc.JoinRoomResponse("mock_room_id")
-        )
-      ),
-      com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomResponse(
-        com.github.CA21engineer.HouseHackathonUnityServer.grpc.RoomResponse.Response.ReadyResponse(
-          com.github.CA21engineer.HouseHackathonUnityServer.grpc.ReadyResponse(
-            Seq.empty,
-            Seq(
-              com.github.CA21engineer.HouseHackathonUnityServer.grpc.Member(in.accountId)
-            ),
-            com.github.CA21engineer.HouseHackathonUnityServer.grpc.Direction.Up,
-            java.time.Instant.now().toString
-          )
-        )
-      )
-    )).throttle(1, 2.seconds)
+class RoomServiceImpl(implicit materializer: Materializer) extends RoomServicePowerApi {
+  val roomAggregates = new RoomAggregates[RoomResponse, Coordinate, Operation]()
+
+  override def createRoom(in: CreateRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
+    roomAggregates.createRoom(in.accountId, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
   }
 
-  override def connectPlayingData(in: Source[PlayingData, NotUsed]): Source[PlayingData, NotUsed] = {
-    in.map(a => {
-      println("received connectPlayingData: ", a.toString)
-      a
-    })
+  override def joinRoom(in: JoinRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
+    roomAggregates
+      .joinRoom(in.accountId, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
+      .getOrElse(Source.empty)
   }
 
-  override def childOperation(in: Source[Operation, NotUsed]): Future[Empty] = {
-    in.map(a => {
-      println("received childOperation: ", a.toString)
-      a
-    })
-    Future.successful(com.github.CA21engineer.HouseHackathonUnityServer.grpc.Empty())
+  override def coordinateSharing(in: Source[Coordinate, NotUsed], metadata: Metadata): Source[Coordinate, NotUsed] = {
+    (metadata.getText("RoomId"), metadata.getText("AccountId")) match {
+      case (Some(roomId), Some(accountId)) =>
+          roomAggregates
+            .getRoomAggregate(roomId, accountId)
+            .map(_.roomRef.playingDataSharingActorRef)
+            .map { ref =>
+              in to Sink.actorRef(ref._1, Status.Success) run()
+              ref._2
+            }
+          .getOrElse(Source.empty)
+      case _ =>
+        Source.empty
+    }
   }
 
-  override def parentOperation(in: ParentOperationRequest): Source[Operation, NotUsed] = {
-    val r =
-      com.github.CA21engineer.HouseHackathonUnityServer.grpc.Operation(
-        "roomId",
-        com.github.CA21engineer.HouseHackathonUnityServer.grpc.Direction.Up,
-        0.1f
-      )
-    Source.repeat(r).throttle(1, 2.seconds)
+  override def childOperation(in: Source[Operation, NotUsed], metadata: Metadata): Future[Empty] = {
+    (metadata.getText("RoomId"), metadata.getText("AccountId")) match {
+      case (Some(roomId), Some(accountId)) =>
+        roomAggregates
+          .getRoomAggregate(roomId, accountId)
+          .map(_.roomRef.operationSharingActorRef._1)
+          .map { ref =>
+            in to Sink.actorRef(ref, Status.Success) run()
+            Future.successful(Empty())
+          }
+          .getOrElse(Future.failed(new Exception("Internal error")))
+      case _ =>
+        Future.failed(new Exception("MetaDataが正しくありません！: require MetaData: string RoomId, string AccountId"))
+    }
   }
+
+  override def parentOperation(in: ParentOperationRequest, metadata: Metadata): Source[Operation, NotUsed] = {
+    roomAggregates
+      .getRoomAggregate(in.roomId, in.accountId)
+      .map(_.roomRef.operationSharingActorRef._2)
+      .getOrElse(Source.empty)
+  }
+
 }
