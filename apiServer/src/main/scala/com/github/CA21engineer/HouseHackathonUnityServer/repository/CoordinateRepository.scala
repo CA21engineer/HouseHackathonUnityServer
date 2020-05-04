@@ -16,9 +16,20 @@ object CoordinateRepository {
       .update().apply()
   }
 
-  def findByRoomId(roomId: String)(implicit s: DBSession = AutoSession): Seq[Coordinate] = {
-    sql"SELECT room_id, x, y, past_millisecond FROM coordinates WHERE room_id=${roomId} order by past_millisecond ASC".map(rs => {
-      Coordinate(rs.string("room_id"), rs.float("x"), rs.float("y"), rs.int("past_millisecond"))
+  def findByRoomId(roomId: String)(implicit s: DBSession = AutoSession): Seq[room.Coordinate] = {
+    sql"SELECT x, y, past_millisecond FROM coordinates WHERE room_id=${roomId} order by past_millisecond ASC".map(rs => {
+      room.Coordinate(rs.float("x"), rs.float("y"), rs.int("past_millisecond"))
     }).list().apply()
   }
+
+  def findBestRecord(implicit s: DBSession = AutoSession): Seq[room.Coordinate] = {
+    val roomList = sql"SELECT room_id FROM coordinates GROUP BY room_id ORDER BY min(past_millisecond) ASC LIMIT 1"
+      .map(_.toMap())
+      .list()
+      .apply()
+    if (roomList.isEmpty) return Seq.empty
+    val roomId = roomList.head("room_id").asInstanceOf[String]
+    findByRoomId(roomId)
+  }
+
 }

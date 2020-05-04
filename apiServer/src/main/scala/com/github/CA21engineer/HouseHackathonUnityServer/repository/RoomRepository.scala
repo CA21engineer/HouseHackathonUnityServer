@@ -16,4 +16,5 @@ object RoomRepository {
       Room(rs.string(roomId))
     }).list().apply()
   }
+
 }

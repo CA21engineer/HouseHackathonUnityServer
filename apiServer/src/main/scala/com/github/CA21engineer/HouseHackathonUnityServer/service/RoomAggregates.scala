@@ -6,7 +6,6 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 
 import scala.util.{Failure, Success, Try}
-
 import com.github.CA21engineer.HouseHackathonUnityServer.repository
 
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
@@ -52,12 +51,12 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       if (newRoomAggregate.isFull) {
         // 操作方向の抽選
         val directions: Seq[Direction] = scala.util.Random.shuffle(List(Direction.Up,Direction.Down,Direction.Left,Direction.Right))
-
-        // TODO ゴースト情報の取得
+        
+        val ghostRec = repository.CoordinateRepository.findBestRecord()
         val readyResponse = { direction: Direction =>
           RoomResponse(RoomResponse.Response.ReadyResponse(ReadyResponse(
             roomId = roomId,
-            ghostRecord = Seq.empty,
+            ghostRecord = ghostRec,
             member = allMember.map(a => Member(a._1)).toSeq,
             direction = direction,
             date = java.time.Instant.now().toString
