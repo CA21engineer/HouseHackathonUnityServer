@@ -7,6 +7,8 @@ import akka.stream.scaladsl.{Sink, Source}
 
 import scala.util.{Failure, Success, Try}
 
+import com.github.CA21engineer.HouseHackathonUnityServer.repository
+
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
   val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
 
@@ -25,6 +27,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
     val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey)
     val roomId = generateRoomId()
     rooms(roomId) = roomAggregate
+    repository.RoomRepository.create(roomId) // insert db
     source// via KillSwitches.shared(roomId).flow
   }
 
