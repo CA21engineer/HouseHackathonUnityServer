@@ -64,7 +64,6 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
   }
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
-    // TODO リザルトの永続化
     CoordinateRepository.recordData(in.roomId, in.ghostRecord)
     Future.successful(Empty())
   }
