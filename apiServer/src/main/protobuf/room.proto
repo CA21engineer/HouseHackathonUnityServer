@@ -30,13 +30,15 @@ message JoinRoomRequest {
 }
 message JoinRoomResponse {
     string RoomId = 1;
+    int32 vagrant = 2; // 空き人数
 }
 
 message ReadyResponse {
-    repeated Coordinate ghostRecord = 1;
-    repeated Member Member = 2;
-    Direction Direction = 3;
-    string date = 4; // google.protobuf.Timestamp
+    string RoomId = 1;
+    repeated Coordinate ghostRecord = 2;
+    repeated Member Member = 3;
+    Direction Direction = 4;
+    string date = 5; // google.protobuf.Timestamp
 }
 
 message Member {
@@ -70,6 +72,12 @@ message ParentOperationRequest {
     string AccountId = 2;
 }
 
+message SendResultRequest {
+    string RoomId = 1;
+    string AccountId = 2;
+    repeated Coordinate ghostRecord = 3;
+}
+
 message Empty {}
 
 service RoomService {
@@ -81,6 +89,8 @@ service RoomService {
 
     rpc ChildOperation(stream Operation) returns (Empty) {};
     rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
+
+    rpc SendResult(SendResultRequest) returns (Empty) {};
 }
 
 
