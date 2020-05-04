@@ -12,9 +12,9 @@ object CoordinateRepository {
       .update().apply()
   }
 
-  def findByRoomId(roomId: String)(implicit s: DBSession = AutoSession): Seq[Room] = {
+  def findByRoomId(roomId: String)(implicit s: DBSession = AutoSession): Seq[Coordinate] = {
     sql"SELECT room_id, x, y, past_millisecond FROM coordinates WHERE id=${roomId} order by past_millisecond ASC".map(rs => {
-      Coordinate(rs.string("room_id"), rs.float("x"), rs.fload("y"), rs.int("past_millisecond"))
+      Coordinate(rs.string("room_id"), rs.float("x"), rs.float("y"), rs.int("past_millisecond"))
     }).list().apply()
   }
 }
