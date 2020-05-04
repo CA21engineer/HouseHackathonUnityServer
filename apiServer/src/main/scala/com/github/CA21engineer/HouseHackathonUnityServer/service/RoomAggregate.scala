@@ -20,7 +20,7 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, ActorRef), c
 
   // 部屋に入れるかどうか
   def canParticipate(roomKey: Option[String]): Boolean =
-    vacantPeople < maxCapacity && {
+    vacantPeople > 0 && {
       (roomKey, this.roomKey) match {
         case (Some(a), Some(b)) => a == b
         case (_, None) => true
@@ -37,6 +37,7 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, ActorRef), c
    */
   def joinRoom(accountId: String, roomKey: Option[String])(implicit materializer: Materializer): Try[(RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed])] = Try {
     require(this.canParticipate(roomKey), "合言葉が違います")
+    require(!this.children.exists(_._1 == accountId), "accountId重複")
 
     val (actorRef, source) = RoomAggregate.createActorRef
     val newChildren = (accountId, actorRef)

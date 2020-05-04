@@ -1,9 +1,8 @@
 package com.github.CA21engineer.HouseHackathonUnityServer.service
 
 import akka.NotUsed
-import akka.actor.Status
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
 import akka.grpc.scaladsl.Metadata
 
@@ -29,7 +28,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.playingDataSharingActorRef)
           .map { ref =>
-            in to Sink.actorRef(ref._1, Status.Success) run()
+            in.runForeach(a => ref._1 ! a)
             ref._2
           }
           .getOrElse(Source.empty)
@@ -45,11 +44,12 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.operationSharingActorRef._1)
           .map { ref =>
-            in to Sink.actorRef(ref, Status.Success) run()
+            in.runForeach(a => ref ! a)
             Future.successful(Empty())
           }
           .getOrElse(Future.failed(new Exception("Internal error")))
       case _ =>
+        println("childOperation: failed MetaData")
         Future.failed(new Exception("MetaDataが正しくありません！: require MetaData: string RoomId, string AccountId"))
     }
   }
@@ -61,4 +61,8 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
       .getOrElse(Source.empty)
   }
 
+  override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
+    // TODO リザルトの永続化
+    Future.successful(Empty())
+  }
 }

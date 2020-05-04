@@ -1,8 +1,9 @@
 package com.github.CA21engineer.HouseHackathonUnityServer.service
 
 import akka.NotUsed
+import akka.actor.Status
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 
 import scala.util.{Failure, Success, Try}
 
@@ -22,8 +23,9 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
    */
   def createRoom(authorAccountId: String, roomKey: Option[String]): Source[T, NotUsed] = {
     val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey)
-    rooms(generateRoomId()) = roomAggregate
-    source
+    val roomId = generateRoomId()
+    rooms(roomId) = roomAggregate
+    source// via KillSwitches.shared(roomId).flow
   }
 
   def searchVacantRoom(roomKey: Option[String]): Try[(String, RoomAggregate[T, Coordinate, Operation])] = {
@@ -34,21 +36,49 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
   def getRoomAggregate(roomId: String, accountId: String): Option[RoomAggregate[T, Coordinate, Operation]] = {
     this.rooms
       .get(roomId)
-      .filter(a => a.children.exists(_._1 == accountId))
+      .filter(a => a.parent._1 == accountId || a.children.exists(_._1 == accountId))
   }
 
   def joinRoom(accountId: String, roomKey: Option[String]): Try[Source[T, NotUsed]] =
     for {
       (roomId, roomAggregate) <- this.searchVacantRoom(roomKey)
-      newRoomAggregate <- roomAggregate.joinRoom(accountId, roomKey)
+      (newRoomAggregate, source) <- roomAggregate.joinRoom(accountId, roomKey)
     } yield {
-      if (newRoomAggregate._1.isFull) {
-        //TODO 準備完了通知
-        newRoomAggregate._1.parent._2 ! ""
-        newRoomAggregate._1.children.foreach(_._2 ! "")
+      import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
+      val allMember = newRoomAggregate.children + newRoomAggregate.parent
+      if (newRoomAggregate.isFull) {
+        // 操作方向の抽選
+        val directions: Seq[Direction] = scala.util.Random.shuffle(List(Direction.Up,Direction.Down,Direction.Left,Direction.Right))
+
+        // TODO ゴースト情報の取得
+        val readyResponse = { direction: Direction =>
+          RoomResponse(RoomResponse.Response.ReadyResponse(ReadyResponse(
+            roomId = roomId,
+            ghostRecord = Seq.empty,
+            member = allMember.map(a => Member(a._1)).toSeq,
+            direction = direction,
+            date = java.time.Instant.now().toString
+          )))
+        }
+
+        // 準備完了通知
+        allMember
+          .zip(directions)
+          .foreach { a =>
+            println(s"Ready通知: ${a._1._1}")
+            Source(List(readyResponse(a._2))) to Sink.actorRef(a._1._2, Status.Success) run()
+          }
       }
-      this.rooms.update(roomId, newRoomAggregate._1)
-      newRoomAggregate._2
+      this.rooms.update(roomId, newRoomAggregate)
+      //TODO 参加完了通知: 後何人
+      allMember.foreach { a =>
+        a._2 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
+          roomId = roomId,
+          vagrant = newRoomAggregate.vacantPeople
+        )))
+      }
+
+      source
     }
 
 }
