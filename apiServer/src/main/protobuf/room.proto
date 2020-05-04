@@ -38,7 +38,7 @@ message ReadyResponse {
     repeated Coordinate ghostRecord = 2;
     repeated Member Member = 3;
     Direction Direction = 4;
-    string date = 5; // google.protobuf.Timestamp
+    string date = 5; // 準備完了時間UTC
 }
 
 message Member {
@@ -58,7 +58,7 @@ message Coordinate {
     float x = 1;
     float y = 2;
     // dateはゲームスタートからの開始ミリ秒(1s = 1000ms)
-    string date = 3; // google.protobuf.Timestamp
+    int64 date = 3; // ゲームスタートからの経過時間
 }
 
 // require MetaData: string roomid, string accountid
