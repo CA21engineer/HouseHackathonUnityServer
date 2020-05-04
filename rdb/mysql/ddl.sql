@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS rooms (
 );
 
 CREATE TABLE IF NOT EXISTS coordinates (
-  id integer PRIMARY KEY auto_increment,
+  id varchar(128) PRIMARY KEY,
   room_id varchar(128) not null,
   x float not null,
   y float not null,

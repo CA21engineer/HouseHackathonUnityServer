@@ -8,6 +8,8 @@ import akka.grpc.scaladsl.Metadata
 
 import scala.concurrent.Future
 
+import com.github.CA21engineer.HouseHackathonUnityServer.repository.CoordinateRepository
+
 class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomServicePowerApi {
   val roomAggregates = new RoomAggregates[RoomResponse, Coordinate, Operation]()
 
@@ -63,6 +65,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
     // TODO リザルトの永続化
+    CoordinateRepository.recordData(in.roomId, in.ghostRecord)
     Future.successful(Empty())
   }
 }
