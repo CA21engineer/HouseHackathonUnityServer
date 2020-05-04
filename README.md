@@ -31,90 +31,102 @@ $ ./run-local.sh
 $ brew install grpcurl
 ```
 
-### CreateRoom
+### ゲーム開始まで
+1. 親が部屋作成
 ```bash
-// rpc CreateRoom(CreateRoomRequest) returns (stream RoomResponse) {};
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"bambootuna","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/CreateRoom
+// Terminal 1
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"parent","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/CreateRoom
+```
 
-Response contents:
-{
-  "createRoomResponse": {
-    "RoomId": "mock_room_id"
-  }
-}
+2. 子が3人はいる
+```bash
+// Terminal 2
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child1","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
 
+// Terminal 3
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child2","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
+
+// Terminal 4
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child3","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
+```
+
+- 人が入るたびにルームIdと後何人入れるかが、すでに入ってる全員に送られる
+```bash
 Response contents:
 {
   "joinRoomResponse": {
-    "RoomId": "mock_room_id"
+    "RoomId": "dfa65e98a18340cbb77a4fb9738d9a16",
+    "vagrant": 1
   }
 }
+```
 
+- 全員入集まると以下データが全員に送られ、このコネクションは閉じられる
+```bash
 Response contents:
 {
   "readyResponse": {
+    "RoomId": "dfa65e98a18340cbb77a4fb9738d9a16",
+    "ghostRecord": [
+        {
+            "x": 0.1,
+            "y": 0.1,
+            "date": 0
+        }
+    ],
     "Member": [
       {
-        "AccountId": "bambootuna"
+        "AccountId": "child1"
+      },
+      {
+        "AccountId": "child2"
+      },
+      {
+        "AccountId": "child3"
+      },
+      {
+        "AccountId": "parent"
       }
     ],
-    "date": "2020-05-03T03:57:57.812Z"
+    "Direction": "Right",// あなたの操作方向
+    "date": "2020-05-04T03:49:32.583Z"
   }
 }
-
 ```
 
-### ConnectPlayingData
+3. ゲーム中に使用するコネクションを開く
+- CoordinateSharing
+親は自機の演算結果の球の座標を送信する。
+子は座標を受け取り自機に反映する。
+
 ```bash
-// rpc ConnectPlayingData(stream PlayingData) returns (stream PlayingData) {};
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"roomId","Coordinate":{"x":0,"y":0,"date":"2020-05-03T03:57:57.812Z"}}' ${SERVER_ENDPOINT} room.RoomService/ConnectPlayingData
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"x":0,"y":0,"date":"2020-05-03T03:57:57.812Z"}' -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: parent' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
 
-Response contents:
-{
-  "RoomId": "roomId",
-  "Coordinate": {
-    "date": "2020-05-03T03:57:57.812Z"
-  }
-}
-
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child1' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child2' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child3' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
 ```
 
-### ChildOperation
-```bash
-// rpc ChildOperation(stream Operation) returns (Empty) {};
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"roomId","Direction":0,"strength":0.12345}' ${SERVER_ENDPOINT} room.RoomService/ChildOperation
+- ChildOperation
+子は操作方向と操作量を送る
 
-Response contents:
-{
-  
-}
+```bash
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"Direction":"Right","strength":0.12345}' -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child1' ${SERVER_ENDPOINT} room.RoomService/ChildOperation
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"Direction":"Left","strength":0.12345}' -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child2' ${SERVER_ENDPOINT} room.RoomService/ChildOperation
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"Direction":"Up","strength":0.12345}' -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child3' ${SERVER_ENDPOINT} room.RoomService/ChildOperation
+```
+- ParentOperation
+親は子の操作状況を受け取る
+```bash
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"dfa65e98a18340cbb77a4fb9738d9a16","AccountId":"parent"}' ${SERVER_ENDPOINT} room.RoomService/ParentOperation
 ```
 
-### ParentOperation
+4. 結果の送信
+
+親がゲーム結果を送信する
+
 ```bash
-// rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"roomId"}' ${SERVER_ENDPOINT} room.RoomService/ParentOperation
-
-
-Response contents:
-{
-  "RoomId": "roomId",
-  "strength": 0.1
-}
-
-...
-2 seconds
-...
-
-Response contents:
-{
-  "RoomId": "roomId",
-  "strength": 0.1
-}
-
-...
-2 seconds
-...
+grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"dfa65e98a18340cbb77a4fb9738d9a16","AccountId":"parent","ghostRecord":[{"x":0.1,"y":0.1,"date":0}]}' ${SERVER_ENDPOINT} room.RoomService/SendResult
 ```
 
 ## ssh鍵作成

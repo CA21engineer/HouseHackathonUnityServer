@@ -18,9 +18,8 @@ message RoomResponse {
 
 message CreateRoomRequest {
     string AccountId = 1;
-    string roomKey = 2; // Option
+    string roomKey = 2; // Optional
 }
-
 message CreateRoomResponse {
     string RoomId = 1;
 }
@@ -29,19 +28,17 @@ message JoinRoomRequest {
     string AccountId = 1;
     string roomKey = 2; // Option
 }
-
 message JoinRoomResponse {
     string RoomId = 1;
+    int32 vagrant = 2; // 空き人数
 }
 
 message ReadyResponse {
-    repeated GhostRecord ghostRecord = 1;
-    repeated Member Member = 2;
-    Direction Direction = 3;
-    string date = 4; // google.protobuf.Timestamp
-}
-
-message GhostRecord {
+    string RoomId = 1;
+    repeated Coordinate ghostRecord = 2;
+    repeated Member Member = 3;
+    Direction Direction = 4;
+    string date = 5; // 準備完了時間UTC
 }
 
 message Member {
@@ -49,33 +46,36 @@ message Member {
 }
 
 enum Direction {
-    Up = 0;
-    Down = 1;
-    Left = 2;
-    Right =3;
+    UNKNOWN = 0;
+    Up = 1;
+    Down = 2;
+    Left = 3;
+    Right =4;
 }
 
-
-message PlayingData {
-    string RoomId = 1;
-    Coordinate Coordinate = 2;
-//    string AccountId = 2;
-}
-
+// require MetaData: string roomid, string accountid
 message Coordinate {
     float x = 1;
     float y = 2;
-    string date = 3; // google.protobuf.Timestamp
+    // dateはゲームスタートからの開始ミリ秒(1s = 1000ms)
+    int64 date = 3; // ゲームスタートからの経過時間
 }
 
+// require MetaData: string roomid, string accountid
 message Operation {
-    string RoomId = 1;
-    Direction Direction = 2;
-    float strength = 3; // 0 ~ 1
+    Direction Direction = 1;
+    float strength = 2; // 0 ~ 1
 }
 
 message ParentOperationRequest {
     string RoomId = 1;
+    string AccountId = 2;
+}
+
+message SendResultRequest {
+    string RoomId = 1;
+    string AccountId = 2;
+    repeated Coordinate ghostRecord = 3;
 }
 
 message Empty {}
@@ -83,10 +83,14 @@ message Empty {}
 service RoomService {
 
     rpc CreateRoom(CreateRoomRequest) returns (stream RoomResponse) {};
-    rpc ConnectPlayingData(stream PlayingData) returns (stream PlayingData) {};
+    rpc JoinRoom(JoinRoomRequest) returns (stream RoomResponse) {};
+
+    rpc CoordinateSharing(stream Coordinate) returns (stream Coordinate) {};
 
     rpc ChildOperation(stream Operation) returns (Empty) {};
     rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
+
+    rpc SendResult(SendResultRequest) returns (Empty) {};
 }
 
 

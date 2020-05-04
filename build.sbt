@@ -20,7 +20,7 @@ lazy val apiServer = (project in file("apiServer"))
     mainClass in (Compile, bashScriptDefines) := Some("com.github.CA21engineer.HouseHackathonUnityServer.apiServer.Main"),
     packageName in Docker := name.value,
     dockerExposedPorts := Seq(18080),
-    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.7" % "runtime"
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime",
   )
   .settings(
     libraryDependencies ++= Seq(
@@ -54,7 +54,12 @@ lazy val apiServer = (project in file("apiServer"))
     ),
     libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime,libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime,
   )
-
+  .settings(
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9",
+    akkaGrpcCodeGeneratorSettings := Seq("server_power_apis"),
+    akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client, AkkaGrpc.Server),
+    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala)
+  )
 
 lazy val root =
   (project in file("."))
