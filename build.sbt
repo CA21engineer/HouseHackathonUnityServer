@@ -1,5 +1,6 @@
 
 val sdk8 = "adoptopenjdk/openjdk8:x86_64-ubuntu-jdk8u212-b03-slim"
+val scalikejdbcVersion = "2.5.2"
 
 lazy val apiServer = (project in file("apiServer"))
   .enablePlugins(JavaAppPackaging, AshScriptPlugin, DockerPlugin, AkkaGrpcPlugin, JavaAgent)
@@ -44,8 +45,14 @@ lazy val apiServer = (project in file("apiServer"))
       Logback.classic,
       LogstashLogbackEncoder.encoder,
       Config.core,
-      Monix.version
-    )
+      Monix.version,
+    ),
+    libraryDependencies ++= Seq(
+      "org.scalikejdbc" %% "scalikejdbc" % scalikejdbcVersion,
+      "org.scalikejdbc" %% "scalikejdbc-jsr310" % scalikejdbcVersion,
+      "mysql" % "mysql-connector-java" % "5.1.27"
+    ),
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime,libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime,
   )
 
 
