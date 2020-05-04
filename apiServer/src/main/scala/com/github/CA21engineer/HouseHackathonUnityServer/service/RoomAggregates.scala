@@ -42,6 +42,11 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       (roomId, roomAggregate) <- this.searchVacantRoom(roomKey)
       newRoomAggregate <- roomAggregate.joinRoom(accountId, roomKey)
     } yield {
+      if (newRoomAggregate._1.isFull) {
+        //TODO 準備完了通知
+        newRoomAggregate._1.parent._2 ! ""
+        newRoomAggregate._1.children.foreach(_._2 ! "")
+      }
       this.rooms.update(roomId, newRoomAggregate._1)
       newRoomAggregate._2
     }

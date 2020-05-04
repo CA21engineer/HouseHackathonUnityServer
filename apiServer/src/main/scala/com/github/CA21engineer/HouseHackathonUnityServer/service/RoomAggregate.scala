@@ -14,7 +14,9 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, ActorRef), c
   require(children.size <= maxCapacity, "満員です")
 
   // 空き人数
-  def vacantPeople: Int = children.size
+  def vacantPeople: Int = maxCapacity - children.size
+
+  def isFull: Boolean = vacantPeople == 0
 
   // 部屋に入れるかどうか
   def canParticipate(roomKey: Option[String]): Boolean =
@@ -46,7 +48,7 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, ActorRef), c
 object RoomAggregate {
   def create[T, Coordinate, Operation](authorAccountId: String, roomKey: Option[String])(implicit materializer: Materializer): (RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed]) = {
     val (actorRef, source) = createActorRef
-    (RoomAggregate((authorAccountId, actorRef), Set.empty, RoomActorRef.create(), roomKey) ,source)
+    (RoomAggregate((authorAccountId, actorRef), Set.empty, RoomActorRef.create, roomKey) ,source)
   }
 
   def createActorRef[T](implicit materializer: Materializer): (ActorRef, Source[T, NotUsed]) = {
