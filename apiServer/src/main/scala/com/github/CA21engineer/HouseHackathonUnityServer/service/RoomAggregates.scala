@@ -1,9 +1,8 @@
 package com.github.CA21engineer.HouseHackathonUnityServer.service
 
 import akka.NotUsed
-import akka.actor.Status
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 
 import scala.util.{Failure, Success, Try}
 import com.github.CA21engineer.HouseHackathonUnityServer.repository
@@ -97,7 +96,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         allMemberHasDirection
           .foreach { a =>
           println(s"Ready通知: ${a._1._1}")
-          a._1._2 ! readyResponse(a._2)
+          a._1._3 ! readyResponse(a._2)
         }
         repository.RoomRepository.create(roomId) // insert db
       }
