@@ -104,7 +104,7 @@ Response contents:
 子は座標を受け取り自機に反映する。
 
 ```bash
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"x":0,"y":0,"date":"2020-05-03T03:57:57.812Z"}' -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: parent' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"x":0,"y":0,"z":0,"date":0}' -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: parent' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
 
 $ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child1' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
 $ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -H 'roomid: dfa65e98a18340cbb77a4fb9738d9a16' -H 'accountid: child2' ${SERVER_ENDPOINT} room.RoomService/CoordinateSharing
@@ -130,7 +130,7 @@ $ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.p
 親がゲーム結果を送信する
 
 ```bash
-grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"dfa65e98a18340cbb77a4fb9738d9a16","AccountId":"parent","ghostRecord":[{"x":0.1,"y":0.1,"date":0}]}' ${SERVER_ENDPOINT} room.RoomService/SendResult
+grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"dfa65e98a18340cbb77a4fb9738d9a16","AccountId":"parent","ghostRecord":[{"x":0.1,"y":0.1,"z":0.1,"date":0}]}' ${SERVER_ENDPOINT} room.RoomService/SendResult
 ```
 
 ## ssh鍵作成
