@@ -81,6 +81,10 @@ message SendResultRequest {
     repeated Coordinate ghostRecord = 3;
 }
 
+message GetPublicRoomResponse {
+    int32 vagrantRoom = 1;
+}
+
 message Empty {}
 
 service RoomService {
@@ -94,6 +98,9 @@ service RoomService {
     rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
 
     rpc SendResult(SendResultRequest) returns (Empty) {};
+
+    // まだ埋まっていない公開部屋数
+    rpc GetPublicRoom(Empty) returns (GetPublicRoomResponse) {};
 }
 
 
