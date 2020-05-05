@@ -37,7 +37,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           .map(_.roomRef.playingDataSharingActorRef)
           .map { ref =>
             in.runForeach(a => {
-              println(s"----- playingData: $a")
+//              println(s"----- playingData: $a")
               ref._1 ! a
             })
             ref._2
@@ -60,7 +60,10 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.operationSharingActorRef._1)
           .map { ref =>
-            in.runForeach(a => ref ! a)
+            in.runForeach(a => {
+              println(s"----- childOperation: $a")
+              ref ! a
+            })
             Future.successful(Empty())
           }
           .getOrElse({

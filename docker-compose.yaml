@@ -18,6 +18,8 @@ services:
     build: apiServer/target/docker/stage
     ports:
       - 18080:18080
+    logging:
+      driver: gcplogs
     environment:
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
