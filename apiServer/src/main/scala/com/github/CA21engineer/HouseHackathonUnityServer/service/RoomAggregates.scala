@@ -18,6 +18,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
   }
 
   def closeRoom(roomId: String): Unit = {
+    println(s"closeRoom request: $roomId")
     rooms.get(roomId)
       .flatMap(_ => rooms.remove(roomId))
       .foreach(_.killSwitch.shutdown())

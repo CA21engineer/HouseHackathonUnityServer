@@ -14,18 +14,22 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
   val roomAggregates = new RoomAggregates[RoomResponse, Coordinate, Operation]()
 
   override def createRoom(in: CreateRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
+    println(s"createRoom: ${in.accountId}, ${in.accountName}, ${in.roomKey}")
     roomAggregates.createRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
   }
 
   override def joinRoom(in: JoinRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
+    println(s"joinRoom: ${in.accountId}, ${in.accountName}, ${in.roomKey}")
     roomAggregates
       .joinRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
       .getOrElse(Source.empty)
   }
 
   override def coordinateSharing(in: Source[Coordinate, NotUsed], metadata: Metadata): Source[Coordinate, NotUsed] = {
+
     (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(roomId), Some(accountId)) =>
+        println(s"coordinateSharing: $roomId, $accountId")
         roomAggregates
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.playingDataSharingActorRef)
@@ -35,6 +39,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           }
           .getOrElse(Source.empty)
       case _ =>
+        println(s"coordinateSharing: meta failed")
         Source.empty
     }
   }
@@ -42,6 +47,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
   override def childOperation(in: Source[Operation, NotUsed], metadata: Metadata): Future[Empty] = {
     (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(roomId), Some(accountId)) =>
+        println(s"childOperation: $roomId, $accountId")
         roomAggregates
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.operationSharingActorRef._1)
@@ -51,12 +57,13 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           }
           .getOrElse(Future.failed(new Exception("Internal error")))
       case _ =>
-        println("childOperation: failed MetaData")
+        println(s"childOperation: meta failed")
         Future.failed(new Exception("MetaDataが正しくありません！: require MetaData: string RoomId, string AccountId"))
     }
   }
 
   override def parentOperation(in: ParentOperationRequest, metadata: Metadata): Source[Operation, NotUsed] = {
+    println(s"parentOperation: ${in.roomId}, ${in.accountId}")
     roomAggregates
       .getRoomAggregate(in.roomId, in.accountId)
       .map(_.roomRef.operationSharingActorRef._2)
@@ -65,6 +72,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
     // 親のみ書き込み可能
+    println(s"sendResult: ${in.roomId}, ${in.accountId}, ${in.ghostRecord}")
     roomAggregates
       .getRoomAggregate(in.roomId, in.accountId)
       .filter(_.parent._1 == in.accountId)
