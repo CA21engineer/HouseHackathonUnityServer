@@ -34,6 +34,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
             if (roomAggregate.isFull) sendErrorMessageToEveryOne(roomAggregate)
             else {
               val newRoomAggregate = roomAggregate.leaveRoom(accountId)
+              println(s"LeavingRoom: vacantPeople = ${newRoomAggregate.vacantPeople}")
               this.rooms.update(roomId, newRoomAggregate)
               sendJoinResponse(roomId, newRoomAggregate)
             }
@@ -50,6 +51,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
 
   def sendJoinResponse(roomId: String, roomAggregate: RoomAggregate[T, Coordinate, Operation]): Unit = {
     val m = roomAggregate.children + roomAggregate.parent
+    println(s"sendJoinResponse: roomId = $roomId, vagrant = ${roomAggregate.vacantPeople}")
     m.foreach(_._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(roomId = roomId, vagrant = roomAggregate.vacantPeople))))
   }
 
