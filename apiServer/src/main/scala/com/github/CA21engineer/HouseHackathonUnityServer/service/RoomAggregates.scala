@@ -111,5 +111,12 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       source
     }
 
+  def getPublicRoom: Int = {
+    this.rooms.count { room =>
+      // 埋まっていない && パブリック
+      !room._2.isFull && room._2.roomKey.isEmpty
+    }
+  }
+
 }
 
