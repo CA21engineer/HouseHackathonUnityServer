@@ -24,7 +24,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
       .joinRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
       .getOrElse({
         println("joinRoom not found")
-        Source.empty
+        Source.single(RoomResponse(RoomResponse.Response.Error(ErrorType.ROOM_NOT_FOUND_ERROR)))
       })
   }
 

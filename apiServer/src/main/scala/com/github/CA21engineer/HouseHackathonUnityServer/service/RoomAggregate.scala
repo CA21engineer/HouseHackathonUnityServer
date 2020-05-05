@@ -23,6 +23,7 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, Acto
     vacantPeople > 0 && {
       (roomKey, this.roomKey) match {
         case (Some(a), Some(b)) => a == b
+        case (Some(_), None) => false
         case (_, None) => true
       }
     }
