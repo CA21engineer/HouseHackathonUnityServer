@@ -64,7 +64,14 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
   }
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
-    CoordinateRepository.recordData(in.roomId, in.ghostRecord)
-    Future.successful(Empty())
+    // 親のみ書き込み可能
+    roomAggregates
+      .getRoomAggregate(in.roomId, in.accountId)
+      .filter(_.parent._1 == in.accountId)
+      .map { _ =>
+        CoordinateRepository.recordData(in.roomId, in.ghostRecord)
+        roomAggregates.closeRoom(in.roomId)
+      }
+      .fold(Future.failed[Empty](new Exception("Internal Error!!!")))(_ => Future.successful(Empty()))
   }
 }

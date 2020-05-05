@@ -2,12 +2,12 @@ package com.github.CA21engineer.HouseHackathonUnityServer.service
 
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.stream.{Materializer, OverflowStrategy}
+import akka.stream.{KillSwitches, Materializer, OverflowStrategy, SharedKillSwitch}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source}
 
 import scala.util.Try
 
-case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, ActorRef), children: Set[(String, String, ActorRef)], roomRef: RoomActorRef[Coordinate, Operation], roomKey: Option[String]) {
+case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, ActorRef), children: Set[(String, String, ActorRef)], roomRef: RoomActorRef[Coordinate, Operation], roomKey: Option[String], killSwitch: SharedKillSwitch) {
   // 親を除いた定員
   private val maxCapacity = 3
 
@@ -41,15 +41,16 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, Acto
 
     val (actorRef, source) = RoomAggregate.createActorRef
     val newChildren = (accountId, accountName, actorRef)
-    (copy(children = this.children + newChildren), source)
+    (copy(children = this.children + newChildren), source via killSwitch.flow)
   }
 
 }
 
 object RoomAggregate {
-  def create[T, Coordinate, Operation](authorAccountId: String, authorAccountName: String, roomKey: Option[String])(implicit materializer: Materializer): (RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed]) = {
+  def create[T, Coordinate, Operation](authorAccountId: String, authorAccountName: String, roomKey: Option[String], roomId: String)(implicit materializer: Materializer): (RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed]) = {
     val (actorRef, source) = createActorRef
-    (RoomAggregate((authorAccountId, authorAccountName, actorRef), Set.empty, RoomActorRef.create, roomKey) ,source)
+    val killSwitch = KillSwitches.shared(roomId)
+    (RoomAggregate((authorAccountId, authorAccountName, actorRef), Set.empty, RoomActorRef.create(killSwitch), roomKey, killSwitch) ,source via killSwitch.flow)
   }
 
   def createActorRef[T](implicit materializer: Materializer): (ActorRef, Source[T, NotUsed]) = {
