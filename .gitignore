@@ -35,3 +35,8 @@ account.json
 
 my-ssh-key
 my-ssh-key.pub
+
+# vscode extension
+metals.sbt
+.bloop/
+.metals/
