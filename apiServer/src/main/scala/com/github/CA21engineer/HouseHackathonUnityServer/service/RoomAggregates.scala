@@ -14,10 +14,11 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
   def watchParentSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
     source.watchTermination()((f, d) => {
       d.foreach { _ =>
-        this.rooms.get(roomId).foreach { roomAggregate =>
-          this.rooms.remove(roomId)
-          sendErrorMessageToEveryOne(roomAggregate)
-        }
+        this.rooms.get(roomId)
+          .foreach { roomAggregate =>
+            this.rooms.remove(roomId)
+            sendErrorMessageToEveryOne(roomAggregate)
+          }
       }(materializer.executionContext)
       f
     })
@@ -139,12 +140,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         repository.RoomRepository.create(roomId) // insert db
       }
       this.rooms.update(roomId, newRoomAggregate)
-      allMember.foreach { a =>
-        a._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
-          roomId = roomId,
-          vagrant = newRoomAggregate.vacantPeople
-        )))
-      }
+      sendJoinResponse(roomId, newRoomAggregate)
 
       watchLeavingRoomSource(source, roomId, accountId)
     }
