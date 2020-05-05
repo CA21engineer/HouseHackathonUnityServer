@@ -17,11 +17,24 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
     })
   }
 
-  def watchLeavingRoomSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
+  def watchLeavingRoomSource[S](source: Source[S, NotUsed], roomId: String, accountId: String): Source[S, NotUsed] = {
     source.watchTermination()((f, d) => {
       d.foreach(_ => {
         // TOD 退室処理
-        ???
+        this.rooms
+          .find(_._1 == roomId)
+          .map(_._2.leaveRoom(accountId))
+          .foreach { roomAggregate =>
+            this.rooms.update(roomId, roomAggregate)
+            val allMember = roomAggregate.children + roomAggregate.parent
+            allMember.foreach { a =>
+              import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
+              a._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
+                roomId = roomId,
+                vagrant = roomAggregate.vacantPeople
+              )))
+            }
+          }
       })(materializer.executionContext)
       f
     })
@@ -121,7 +134,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         )))
       }
 
-      source
+      watchLeavingRoomSource(source, roomId, accountId)
     }
 
 }

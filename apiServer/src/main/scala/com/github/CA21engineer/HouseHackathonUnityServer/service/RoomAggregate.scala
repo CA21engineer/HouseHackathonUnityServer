@@ -44,6 +44,11 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, Acto
     (copy(children = this.children + newChildren), source via killSwitch.flow)
   }
 
+  def leaveRoom(accountId: String): RoomAggregate[T, Coordinate, Operation] = {
+    println(s"leaveRoom: $accountId")
+    copy(children = this.children.takeWhile(_._1 != accountId))
+  }
+
 }
 
 object RoomAggregate {
