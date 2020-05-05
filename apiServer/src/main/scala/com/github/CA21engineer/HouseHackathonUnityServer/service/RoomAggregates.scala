@@ -10,6 +10,19 @@ import scala.util.{Failure, Success, Try}
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
   val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
 
+  def watchSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
+    source.watchTermination()((f, d) => {
+      d.foreach(_ => closeRoom(roomId))(materializer.executionContext)
+      f
+    })
+  }
+
+  def closeRoom(roomId: String): Unit = {
+    rooms.get(roomId)
+      .flatMap(_ => rooms.remove(roomId))
+      .foreach(_.killSwitch.shutdown())
+  }
+
   def generateRoomId(): String =
     java.util.UUID.randomUUID.toString.replaceAll("-", "")
 
@@ -22,10 +35,10 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
    *  @return
    */
   def createRoom(authorAccountId: String, roomKey: Option[String]): Source[T, NotUsed] = {
-    val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey)
     val roomId = generateRoomId()
+    val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey, roomId)
     rooms(roomId) = roomAggregate
-    source// via KillSwitches.shared(roomId).flow
+    watchSource(source, roomId)
   }
 
   def searchVacantRoom(roomKey: Option[String]): Try[(String, RoomAggregate[T, Coordinate, Operation])] = {
@@ -36,7 +49,23 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
   def getRoomAggregate(roomId: String, accountId: String): Option[RoomAggregate[T, Coordinate, Operation]] = {
     this.rooms
       .get(roomId)
-      .filter(a => a.parent._1 == accountId || a.children.exists(_._1 == accountId))
+      .collect {
+        case roomAggregate if roomAggregate.parent._1 == accountId =>
+          roomAggregate.copy(
+            roomRef = roomAggregate.roomRef.copy(
+              playingDataSharingActorRef = (
+                roomAggregate.roomRef.playingDataSharingActorRef._1,
+                watchSource(roomAggregate.roomRef.playingDataSharingActorRef._2, roomId)
+              ),
+              operationSharingActorRef = (
+                roomAggregate.roomRef.operationSharingActorRef._1,
+                watchSource(roomAggregate.roomRef.operationSharingActorRef._2, roomId)
+              )
+            )
+          )
+        case roomAggregate if roomAggregate.children.exists(_._1 == accountId) =>
+          roomAggregate
+      }
   }
 
   def joinRoom(accountId: String, roomKey: Option[String]): Try[Source[T, NotUsed]] =
@@ -66,11 +95,10 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
           .zip(directions)
           .foreach { a =>
             println(s"Ready通知: ${a._1._1}")
-            Source(List(readyResponse(a._2))) to Sink.actorRef(a._1._2, Status.Success) run()
+            a._1._2 ! readyResponse(a._2)
           }
       }
       this.rooms.update(roomId, newRoomAggregate)
-      //TODO 参加完了通知: 後何人
       allMember.foreach { a =>
         a._2 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
           roomId = roomId,
