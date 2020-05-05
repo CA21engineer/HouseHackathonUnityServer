@@ -30,10 +30,13 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         // 退室処理
         this.rooms
           .get(roomId)
-          .map(_.leaveRoom(accountId))
           .foreach { roomAggregate =>
-            this.rooms.update(roomId, roomAggregate)
-            if (roomAggregate.isFull) sendErrorMessageToEveryOne(roomAggregate) else sendJoinResponse(roomId, roomAggregate)
+            if (roomAggregate.isFull) sendErrorMessageToEveryOne(roomAggregate)
+            else {
+              val newRoomAggregate = roomAggregate.leaveRoom(accountId)
+              this.rooms.update(roomId, newRoomAggregate)
+              sendJoinResponse(roomId, newRoomAggregate)
+            }
           }
       })(materializer.executionContext)
       f
