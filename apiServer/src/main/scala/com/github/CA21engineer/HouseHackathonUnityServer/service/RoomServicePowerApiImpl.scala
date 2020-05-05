@@ -22,7 +22,10 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
     println(s"joinRoom: ${in.accountId}, ${in.accountName}, ${in.roomKey}")
     roomAggregates
       .joinRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
-      .getOrElse(Source.empty)
+      .getOrElse({
+        println("joinRoom not found")
+        Source.empty
+      })
   }
 
   override def coordinateSharing(in: Source[Coordinate, NotUsed], metadata: Metadata): Source[Coordinate, NotUsed] = {
@@ -36,7 +39,10 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
             in.runForeach(a => ref._1 ! a)
             ref._2
           }
-          .getOrElse(Source.empty)
+          .getOrElse({
+            println("coordinateSharing not found")
+            Source.empty
+          })
       case _ =>
         println(s"coordinateSharing: meta failed: ${metadata.getText("roomid")}, ${metadata.getText("accountid")}")
         Source.empty
@@ -54,7 +60,10 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
             in.runForeach(a => ref ! a)
             Future.successful(Empty())
           }
-          .getOrElse(Future.failed(new Exception("Internal error")))
+          .getOrElse({
+            println("childOperation not found")
+            Future.failed(new Exception("Internal error"))
+          })
       case _ =>
         println(s"childOperation: meta failed: ${metadata.getText("roomid")}, ${metadata.getText("accountid")}")
         Future.failed(new Exception("MetaDataが正しくありません！: require MetaData: string RoomId, string AccountId"))
@@ -66,7 +75,10 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
     roomAggregates
       .getRoomAggregate(in.roomId, in.accountId)
       .map(_.roomRef.operationSharingActorRef._2)
-      .getOrElse(Source.empty)
+      .getOrElse({
+        println("parentOperation not found")
+        Source.empty
+      })
   }
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
@@ -79,6 +91,9 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
         CoordinateRepository.recordData(in.roomId, in.ghostRecord)
         roomAggregates.closeRoom(in.roomId)
       }
-      .fold(Future.failed[Empty](new Exception("Internal Error!!!")))(_ => Future.successful(Empty()))
+      .fold({
+        println("sendResult not found")
+        Future.failed[Empty](new Exception("Internal Error!!!"))
+      })(_ => Future.successful(Empty()))
   }
 }
