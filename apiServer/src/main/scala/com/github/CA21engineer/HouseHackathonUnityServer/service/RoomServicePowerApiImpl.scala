@@ -92,7 +92,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
       .filter(_.parent._1 == in.accountId)
       .map { aggregate =>
 //        CoordinateRepository.recordData(in.roomId, in.ghostRecord)
-        aggregate.children.foreach(_._3 ! SimpleGameResult(in.isGameClear, in.date))
+        aggregate.children.foreach(_._3 ! RoomResponse(RoomResponse.Response.Result(SimpleGameResult(in.isGameClear, in.date))))
       }
       .fold({
         println("sendResult not found")
