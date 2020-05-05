@@ -6,13 +6,20 @@ import akka.stream.scaladsl.Source
 
 import scala.util.{Failure, Success, Try}
 import com.github.CA21engineer.HouseHackathonUnityServer.repository
+import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
 
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
   val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
 
   def watchParentSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
     source.watchTermination()((f, d) => {
-      d.foreach(_ => closeRoom(roomId))(materializer.executionContext)
+      d.foreach { _ =>
+        this.rooms.get(roomId)
+          .foreach { roomAggregate =>
+            this.rooms.remove(roomId)
+            sendErrorMessageToEveryOne(roomAggregate)
+          }
+      }(materializer.executionContext)
       f
     })
   }
@@ -20,31 +27,27 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
   def watchLeavingRoomSource[S](source: Source[S, NotUsed], roomId: String, accountId: String): Source[S, NotUsed] = {
     source.watchTermination()((f, d) => {
       d.foreach(_ => {
-        // TOD 退室処理
+        // 退室処理
         this.rooms
-          .find(_._1 == roomId)
-          .map(_._2.leaveRoom(accountId))
+          .get(roomId)
+          .map(_.leaveRoom(accountId))
           .foreach { roomAggregate =>
             this.rooms.update(roomId, roomAggregate)
-            val allMember = roomAggregate.children + roomAggregate.parent
-            allMember.foreach { a =>
-              import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
-              a._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
-                roomId = roomId,
-                vagrant = roomAggregate.vacantPeople
-              )))
-            }
+            sendJoinResponse(roomId, roomAggregate)
           }
       })(materializer.executionContext)
       f
     })
   }
 
-  def closeRoom(roomId: String): Unit = {
-    println(s"closeRoom request: $roomId")
-    rooms.get(roomId)
-      .flatMap(_ => rooms.remove(roomId))
-      .foreach(_.killSwitch.shutdown())
+  def sendErrorMessageToEveryOne(roomAggregate: RoomAggregate[T, Coordinate, Operation]): Unit = {
+    val m = roomAggregate.children + roomAggregate.parent
+      m.foreach(_._3 ! RoomResponse(RoomResponse.Response.Error(ErrorType.LOST_CONNECTION_ERROR)))
+  }
+
+  def sendJoinResponse(roomId: String, roomAggregate: RoomAggregate[T, Coordinate, Operation]): Unit = {
+    val m = roomAggregate.children + roomAggregate.parent
+    m.foreach(_._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(roomId = roomId, vagrant = roomAggregate.vacantPeople))))
   }
 
   def generateRoomId(): String =
@@ -88,7 +91,18 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
             )
           )
         case roomAggregate if roomAggregate.children.exists(_._1 == accountId) =>
-          roomAggregate
+          roomAggregate.copy(
+            roomRef = roomAggregate.roomRef.copy(
+              playingDataSharingActorRef = (
+                roomAggregate.roomRef.playingDataSharingActorRef._1,
+                watchParentSource(roomAggregate.roomRef.playingDataSharingActorRef._2, roomId)
+              ),
+              operationSharingActorRef = (
+                roomAggregate.roomRef.operationSharingActorRef._1,
+                watchParentSource(roomAggregate.roomRef.operationSharingActorRef._2, roomId)
+              )
+            )
+          )
       }
   }
 
@@ -97,7 +111,6 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       (roomId, roomAggregate) <- this.searchVacantRoom(roomKey)
       (newRoomAggregate, source) <- roomAggregate.joinRoom(accountId, accountName, roomKey)
     } yield {
-      import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
       val allMember = newRoomAggregate.children + newRoomAggregate.parent
       if (newRoomAggregate.isFull) {
         // 操作方向の抽選
@@ -127,12 +140,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         repository.RoomRepository.create(roomId) // insert db
       }
       this.rooms.update(roomId, newRoomAggregate)
-      allMember.foreach { a =>
-        a._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
-          roomId = roomId,
-          vagrant = newRoomAggregate.vacantPeople
-        )))
-      }
+      sendJoinResponse(roomId, newRoomAggregate)
 
       watchLeavingRoomSource(source, roomId, accountId)
     }
