@@ -19,9 +19,17 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
 
   def closeRoom(roomId: String): Unit = {
     println(s"closeRoom request: $roomId")
+    // プレイ中じゃなかったら何もしない
+    // ゲームのプレイ中に人がぬけたらエラー
     rooms.get(roomId)
       .flatMap(_ => rooms.remove(roomId))
-      .foreach(_.killSwitch.shutdown())
+      .foreach { a =>
+        val allMember = a.children + a.parent
+        if (a.isFull) {
+          allMember.foreach {_._3 ! errorType(ErrorType.LOST_CONNECTION_ERROR)}
+        }
+      }
+
   }
 
   def generateRoomId(): String =
