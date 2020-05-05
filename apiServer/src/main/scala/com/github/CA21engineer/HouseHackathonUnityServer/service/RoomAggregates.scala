@@ -33,7 +33,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
           .map(_.leaveRoom(accountId))
           .foreach { roomAggregate =>
             this.rooms.update(roomId, roomAggregate)
-            sendJoinResponse(roomId, roomAggregate)
+            if (roomAggregate.isFull) sendErrorMessageToEveryOne(roomAggregate) else sendJoinResponse(roomId, roomAggregate)
           }
       })(materializer.executionContext)
       f
@@ -119,7 +119,8 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         val allMemberHasDirection = allMember.zip(directions)
 
         // ゴーストレコードの取得
-        val ghostRec = repository.CoordinateRepository.findBestRecord()
+        val ghostRec = Seq.empty
+        //repository.CoordinateRepository.findBestRecord()
 
         val readyResponse = { direction: Direction =>
           RoomResponse(RoomResponse.Response.ReadyResponse(ReadyResponse(
@@ -137,7 +138,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
           println(s"Ready通知: ${a._1._1}")
           a._1._3 ! readyResponse(a._2)
         }
-        repository.RoomRepository.create(roomId) // insert db
+        //repository.RoomRepository.create(roomId) // insert db
       }
       this.rooms.update(roomId, newRoomAggregate)
       sendJoinResponse(roomId, newRoomAggregate)
