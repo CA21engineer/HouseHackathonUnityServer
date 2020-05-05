@@ -35,19 +35,19 @@ $ brew install grpcurl
 1. 親が部屋作成
 ```bash
 // Terminal 1
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"parent","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/CreateRoom
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"parent","AccountName":"parentName", "roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/CreateRoom
 ```
 
 2. 子が3人はいる
 ```bash
 // Terminal 2
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child1","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child1", "AccountName":"childName1","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
 
 // Terminal 3
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child2","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child2","AccountName":"childName2","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
 
 // Terminal 4
-$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child3","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
+$ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"AccountId":"child3","AccountName":"childName3","roomKey":""}' ${SERVER_ENDPOINT} room.RoomService/JoinRoom
 ```
 
 - 人が入るたびにルームIdと後何人入れるかが、すでに入ってる全員に送られる
@@ -76,17 +76,21 @@ Response contents:
     ],
     "Member": [
       {
-        "AccountId": "child1"
+        "AccountName": "parentName",
+        "Direction": "Down"
       },
       {
-        "AccountId": "child2"
+        "AccountName": "childName1",
+        "Direction": "Right"
       },
       {
-        "AccountId": "child3"
+        "AccountName": "childName2",
+        "Direction": "Left"
       },
       {
-        "AccountId": "parent"
-      }
+        "AccountName": "childName3",
+        "Direction": "Up"
+      },
     ],
     "Direction": "Right",// あなたの操作方向
     "date": "2020-05-04T03:49:32.583Z"
