@@ -65,6 +65,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
     CoordinateRepository.recordData(in.roomId, in.ghostRecord)
+    roomAggregates.closeRoom(in.roomId)
     Future.successful(Empty())
   }
 }
