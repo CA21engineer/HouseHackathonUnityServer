@@ -6,6 +6,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 
 import scala.util.{Failure, Success, Try}
+import com.github.CA21engineer.HouseHackathonUnityServer.repository
 
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
   val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
@@ -34,9 +35,9 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
    *  @param roomKey ルームの合言葉: Some -> プラーベートなルーム, None -> パブリックなルーム
    *  @return
    */
-  def createRoom(authorAccountId: String, roomKey: Option[String]): Source[T, NotUsed] = {
+  def createRoom(authorAccountId: String, authorAccountName: String, roomKey: Option[String]): Source[T, NotUsed] = {
     val roomId = generateRoomId()
-    val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey, roomId)
+    val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, authorAccountName, roomKey, roomId)
     rooms(roomId) = roomAggregate
     watchSource(source, roomId)
   }
@@ -68,10 +69,10 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       }
   }
 
-  def joinRoom(accountId: String, roomKey: Option[String]): Try[Source[T, NotUsed]] =
+  def joinRoom(accountId: String, accountName: String, roomKey: Option[String]): Try[Source[T, NotUsed]] =
     for {
       (roomId, roomAggregate) <- this.searchVacantRoom(roomKey)
-      (newRoomAggregate, source) <- roomAggregate.joinRoom(accountId, roomKey)
+      (newRoomAggregate, source) <- roomAggregate.joinRoom(accountId, accountName, roomKey)
     } yield {
       import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
       val allMember = newRoomAggregate.children + newRoomAggregate.parent
@@ -79,28 +80,30 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         // 操作方向の抽選
         val directions: Seq[Direction] = scala.util.Random.shuffle(List(Direction.Up,Direction.Down,Direction.Left,Direction.Right))
 
-        // TODO ゴースト情報の取得
+        val allMemberHasDirection = allMember.zip(directions)
+
+        val ghostRec = repository.CoordinateRepository.findBestRecord()
         val readyResponse = { direction: Direction =>
           RoomResponse(RoomResponse.Response.ReadyResponse(ReadyResponse(
             roomId = roomId,
-            ghostRecord = Seq.empty,
-            member = allMember.map(a => Member(a._1)).toSeq,
+            ghostRecord = ghostRec,
+            member = allMemberHasDirection.map(a => Member(a._1._2, a._2)).toSeq,
             direction = direction,
             date = java.time.Instant.now().toString
           )))
         }
 
         // 準備完了通知
-        allMember
-          .zip(directions)
+        allMemberHasDirection
           .foreach { a =>
-            println(s"Ready通知: ${a._1._1}")
-            a._1._2 ! readyResponse(a._2)
-          }
+          println(s"Ready通知: ${a._1._1}")
+          a._1._2 ! readyResponse(a._2)
+        }
+        repository.RoomRepository.create(roomId) // insert db
       }
       this.rooms.update(roomId, newRoomAggregate)
       allMember.foreach { a =>
-        a._2 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
+        a._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
           roomId = roomId,
           vagrant = newRoomAggregate.vacantPeople
         )))

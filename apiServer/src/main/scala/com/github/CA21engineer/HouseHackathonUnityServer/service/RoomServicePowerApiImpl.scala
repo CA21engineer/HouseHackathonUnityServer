@@ -8,16 +8,18 @@ import akka.grpc.scaladsl.Metadata
 
 import scala.concurrent.Future
 
+import com.github.CA21engineer.HouseHackathonUnityServer.repository.CoordinateRepository
+
 class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomServicePowerApi {
   val roomAggregates = new RoomAggregates[RoomResponse, Coordinate, Operation]()
 
   override def createRoom(in: CreateRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
-    roomAggregates.createRoom(in.accountId, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
+    roomAggregates.createRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
   }
 
   override def joinRoom(in: JoinRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
     roomAggregates
-      .joinRoom(in.accountId, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
+      .joinRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
       .getOrElse(Source.empty)
   }
 
@@ -62,7 +64,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
   }
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
-    // TODO リザルトの永続化
+    CoordinateRepository.recordData(in.roomId, in.ghostRecord)
     Future.successful(Empty())
   }
 }
