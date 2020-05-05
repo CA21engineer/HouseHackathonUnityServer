@@ -3,6 +3,8 @@ services:
   mysql:
     build: rdb/mysql
     restart: always
+    ports:
+      - 3306:3306
     environment:
       - MYSQL_DATABASE=unity
       - MYSQL_ROOT_PASSWORD=root
