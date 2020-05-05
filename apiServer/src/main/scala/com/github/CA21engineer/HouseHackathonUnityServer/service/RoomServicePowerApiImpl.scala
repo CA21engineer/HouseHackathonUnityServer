@@ -52,7 +52,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
     }
   }
 
-  override def childOperation(in: Source[Operation, NotUsed], metadata: Metadata): Future[Empty] = {
+  override def childOperation(in: Source[Operation, NotUsed], metadata: Metadata): Source[Empty, NotUsed] = {
     (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(roomId), Some(accountId)) =>
         println(s"childOperation: $roomId, $accountId")
@@ -60,19 +60,19 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.operationSharingActorRef._1)
           .map { ref =>
-            in.runForeach(a => {
+            in.map(a => {
               println(s"----- childOperation: $a")
               ref ! a
+              Empty()
             })
-            Future.successful(Empty())
           }
           .getOrElse({
             println("childOperation not found")
-            Future.failed(new Exception("Internal error"))
+            Source.empty
           })
       case _ =>
         println(s"childOperation: meta failed: ${metadata.getText("roomid")}, ${metadata.getText("accountid")}")
-        Future.failed(new Exception("MetaDataが正しくありません！: require MetaData: string RoomId, string AccountId"))
+        Source.empty
     }
   }
 
