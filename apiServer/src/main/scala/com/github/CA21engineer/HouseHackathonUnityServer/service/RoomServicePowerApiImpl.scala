@@ -94,7 +94,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
         println("CoordinateRepository create Future")
         Future {
           println("CoordinateRepository start")
-          CoordinateRepository.recordData(in.roomId, in.ghostRecord)
+//          CoordinateRepository.recordData(in.roomId, in.ghostRecord)
           println("CoordinateRepository complete")
         }(materializer.executionContext)
         println("CoordinateRepository end Future")
