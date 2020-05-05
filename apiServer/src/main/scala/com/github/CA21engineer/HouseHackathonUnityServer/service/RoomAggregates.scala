@@ -6,6 +6,7 @@ import akka.stream.scaladsl.Source
 
 import scala.util.{Failure, Success, Try}
 import com.github.CA21engineer.HouseHackathonUnityServer.repository
+import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
 
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
   val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
@@ -42,9 +43,21 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
 
   def closeRoom(roomId: String): Unit = {
     println(s"closeRoom request: $roomId")
+    // プレイ中じゃなかったら何もしない
+    // ゲームのプレイ中に人がぬけたらエラー
     rooms.get(roomId)
       .flatMap(_ => rooms.remove(roomId))
-      .foreach(_.killSwitch.shutdown())
+      .foreach { a =>
+        val allMember = a.children + a.parent
+        if (a.isFull) {
+          allMember.foreach {_._3 ! RoomResponse(RoomResponse.Response.Error(
+            ErrorType.LOST_CONNECTION_ERROR
+          ))}
+        } else {
+          // TODO: 空き人数の通知
+        }
+      }
+
   }
 
   def generateRoomId(): String =
@@ -97,7 +110,6 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       (roomId, roomAggregate) <- this.searchVacantRoom(roomKey)
       (newRoomAggregate, source) <- roomAggregate.joinRoom(accountId, accountName, roomKey)
     } yield {
-      import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
       val allMember = newRoomAggregate.children + newRoomAggregate.parent
       if (newRoomAggregate.isFull) {
         // 操作方向の抽選
