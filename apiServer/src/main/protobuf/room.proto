@@ -91,7 +91,7 @@ service RoomService {
 
     rpc CoordinateSharing(stream Coordinate) returns (stream Coordinate) {};
 
-    rpc ChildOperation(stream Operation) returns (Empty) {};
+    rpc ChildOperation(stream Operation) returns (stream Empty) {};
     rpc ParentOperation(ParentOperationRequest) returns (stream Operation) {};
 
     rpc SendResult(SendResultRequest) returns (Empty) {};
