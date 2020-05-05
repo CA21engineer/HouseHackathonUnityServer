@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS coordinates (
   room_id varchar(128) not null,
   x float not null,
   y float not null,
+  z float not null,
   past_millisecond integer not null,
   CONSTRAINT `fk_room_coordinates`
       FOREIGN KEY (room_id)

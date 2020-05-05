@@ -4,5 +4,6 @@ case class Coordinate(
     roomID: String,
     x: Float,
     y: Float,
+    z: Float,
     pastMilliSecond: Int,
     )
