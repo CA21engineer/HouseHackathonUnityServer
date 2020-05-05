@@ -19,6 +19,7 @@ message RoomResponse {
 message CreateRoomRequest {
     string AccountId = 1;
     string roomKey = 2; // Optional
+    string AccountName = 3;
 }
 message CreateRoomResponse {
     string RoomId = 1;
@@ -27,6 +28,7 @@ message CreateRoomResponse {
 message JoinRoomRequest {
     string AccountId = 1;
     string roomKey = 2; // Option
+    string AccountName = 3;
 }
 message JoinRoomResponse {
     string RoomId = 1;
@@ -42,7 +44,8 @@ message ReadyResponse {
 }
 
 message Member {
-    string AccountId = 1;
+    string AccountName = 1;
+    Direction Direction = 2;
 }
 
 enum Direction {
