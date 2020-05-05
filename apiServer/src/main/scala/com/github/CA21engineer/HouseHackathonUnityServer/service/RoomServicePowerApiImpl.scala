@@ -26,7 +26,6 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
   }
 
   override def coordinateSharing(in: Source[Coordinate, NotUsed], metadata: Metadata): Source[Coordinate, NotUsed] = {
-
     (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(roomId), Some(accountId)) =>
         println(s"coordinateSharing: $roomId, $accountId")
@@ -39,7 +38,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           }
           .getOrElse(Source.empty)
       case _ =>
-        println(s"coordinateSharing: meta failed")
+        println(s"coordinateSharing: meta failed: ${metadata.getText("roomid")}, ${metadata.getText("accountid")}")
         Source.empty
     }
   }
@@ -57,7 +56,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           }
           .getOrElse(Future.failed(new Exception("Internal error")))
       case _ =>
-        println(s"childOperation: meta failed")
+        println(s"childOperation: meta failed: ${metadata.getText("roomid")}, ${metadata.getText("accountid")}")
         Future.failed(new Exception("MetaDataが正しくありません！: require MetaData: string RoomId, string AccountId"))
     }
   }
