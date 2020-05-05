@@ -13,7 +13,12 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
 
   def watchParentSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
     source.watchTermination()((f, d) => {
-      d.foreach(_ => closeRoom(roomId))(materializer.executionContext)
+      d.foreach { _ =>
+        this.rooms.get(roomId).foreach { roomAggregate =>
+          this.rooms.remove(roomId)
+          sendErrorMessageToEveryOne(roomAggregate)
+        }
+      }(materializer.executionContext)
       f
     })
   }
@@ -21,43 +26,27 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
   def watchLeavingRoomSource[S](source: Source[S, NotUsed], roomId: String, accountId: String): Source[S, NotUsed] = {
     source.watchTermination()((f, d) => {
       d.foreach(_ => {
-        // TOD 退室処理
+        // 退室処理
         this.rooms
-          .find(_._1 == roomId)
-          .map(_._2.leaveRoom(accountId))
+          .get(roomId)
+          .map(_.leaveRoom(accountId))
           .foreach { roomAggregate =>
             this.rooms.update(roomId, roomAggregate)
-            val allMember = roomAggregate.children + roomAggregate.parent
-            allMember.foreach { a =>
-              import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
-              a._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
-                roomId = roomId,
-                vagrant = roomAggregate.vacantPeople
-              )))
-            }
+            sendJoinResponse(roomId, roomAggregate)
           }
       })(materializer.executionContext)
       f
     })
   }
 
-  def closeRoom(roomId: String): Unit = {
-    println(s"closeRoom request: $roomId")
-    // プレイ中じゃなかったら何もしない
-    // ゲームのプレイ中に人がぬけたらエラー
-    rooms.get(roomId)
-      .flatMap(_ => rooms.remove(roomId))
-      .foreach { a =>
-        val allMember = a.children + a.parent
-        if (a.isFull) {
-          allMember.foreach {_._3 ! RoomResponse(RoomResponse.Response.Error(
-            ErrorType.LOST_CONNECTION_ERROR
-          ))}
-        } else {
-          // TODO: 空き人数の通知
-        }
-      }
+  def sendErrorMessageToEveryOne(roomAggregate: RoomAggregate[T, Coordinate, Operation]): Unit = {
+    val m = roomAggregate.children + roomAggregate.parent
+      m.foreach(_._3 ! RoomResponse(RoomResponse.Response.Error(ErrorType.LOST_CONNECTION_ERROR)))
+  }
 
+  def sendJoinResponse(roomId: String, roomAggregate: RoomAggregate[T, Coordinate, Operation]): Unit = {
+    val m = roomAggregate.children + roomAggregate.parent
+    m.foreach(_._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(roomId = roomId, vagrant = roomAggregate.vacantPeople))))
   }
 
   def generateRoomId(): String =
@@ -101,7 +90,18 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
             )
           )
         case roomAggregate if roomAggregate.children.exists(_._1 == accountId) =>
-          roomAggregate
+          roomAggregate.copy(
+            roomRef = roomAggregate.roomRef.copy(
+              playingDataSharingActorRef = (
+                roomAggregate.roomRef.playingDataSharingActorRef._1,
+                watchParentSource(roomAggregate.roomRef.playingDataSharingActorRef._2, roomId)
+              ),
+              operationSharingActorRef = (
+                roomAggregate.roomRef.operationSharingActorRef._1,
+                watchParentSource(roomAggregate.roomRef.operationSharingActorRef._2, roomId)
+              )
+            )
+          )
       }
   }
 
