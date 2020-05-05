@@ -36,10 +36,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.playingDataSharingActorRef)
           .map { ref =>
-            in.runForeach(a => {
-//              println(s"----- playingData: $a")
-              ref._1 ! a
-            })
+            in.runForeach(a => ref._1 ! a)
             ref._2
           }
           .getOrElse({
@@ -93,9 +90,9 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
     roomAggregates
       .getRoomAggregate(in.roomId, in.accountId)
       .filter(_.parent._1 == in.accountId)
-      .map { _ =>
+      .map { aggregate =>
         CoordinateRepository.recordData(in.roomId, in.ghostRecord)
-        roomAggregates.closeRoom(in.roomId)
+        aggregate.children.foreach(_._3 ! SimpleGameResult(in.isGameClear, in.date))
       }
       .fold({
         println("sendResult not found")
