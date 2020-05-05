@@ -26,7 +26,6 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
     val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey)
     val roomId = generateRoomId()
     rooms(roomId) = roomAggregate
-    repository.RoomRepository.create(roomId) // insert db
     source// via KillSwitches.shared(roomId).flow
   }
 
@@ -70,6 +69,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
             println(s"Ready通知: ${a._1._1}")
             Source(List(readyResponse(a._2))) to Sink.actorRef(a._1._2, Status.Success) run()
           }
+        repository.RoomRepository.create(roomId) // insert db
       }
       this.rooms.update(roomId, newRoomAggregate)
       //TODO 参加完了通知: 後何人
