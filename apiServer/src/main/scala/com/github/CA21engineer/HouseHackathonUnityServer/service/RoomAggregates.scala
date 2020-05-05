@@ -21,8 +21,8 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
    *  @param roomKey ルームの合言葉: Some -> プラーベートなルーム, None -> パブリックなルーム
    *  @return
    */
-  def createRoom(authorAccountId: String, roomKey: Option[String]): Source[T, NotUsed] = {
-    val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, roomKey)
+  def createRoom(authorAccountId: String, authorAccountName: String, roomKey: Option[String]): Source[T, NotUsed] = {
+    val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, authorAccountName, roomKey)
     val roomId = generateRoomId()
     rooms(roomId) = roomAggregate
     source// via KillSwitches.shared(roomId).flow
@@ -39,10 +39,10 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       .filter(a => a.parent._1 == accountId || a.children.exists(_._1 == accountId))
   }
 
-  def joinRoom(accountId: String, roomKey: Option[String]): Try[Source[T, NotUsed]] =
+  def joinRoom(accountId: String, accountName: String, roomKey: Option[String]): Try[Source[T, NotUsed]] =
     for {
       (roomId, roomAggregate) <- this.searchVacantRoom(roomKey)
-      (newRoomAggregate, source) <- roomAggregate.joinRoom(accountId, roomKey)
+      (newRoomAggregate, source) <- roomAggregate.joinRoom(accountId, accountName, roomKey)
     } yield {
       import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
       val allMember = newRoomAggregate.children + newRoomAggregate.parent

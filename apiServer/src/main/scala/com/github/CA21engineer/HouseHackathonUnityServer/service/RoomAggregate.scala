@@ -7,7 +7,7 @@ import akka.stream.scaladsl.{BroadcastHub, Keep, Source}
 
 import scala.util.Try
 
-case class RoomAggregate[T, Coordinate, Operation](parent: (String, ActorRef), children: Set[(String, ActorRef)], roomRef: RoomActorRef[Coordinate, Operation], roomKey: Option[String]) {
+case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, ActorRef), children: Set[(String, String, ActorRef)], roomRef: RoomActorRef[Coordinate, Operation], roomKey: Option[String]) {
   // 親を除いた定員
   private val maxCapacity = 3
 
@@ -35,21 +35,21 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, ActorRef), c
    *  @param roomKey ルームの合言葉
    *  @return 満員でなく、プライベートなルームの場合は`roomKey`が一致していたら`Success[RoomAggregate]`
    */
-  def joinRoom(accountId: String, roomKey: Option[String])(implicit materializer: Materializer): Try[(RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed])] = Try {
+  def joinRoom(accountId: String, accountName: String, roomKey: Option[String])(implicit materializer: Materializer): Try[(RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed])] = Try {
     require(this.canParticipate(roomKey), "合言葉が違います")
     require(!this.children.exists(_._1 == accountId), "accountId重複")
 
     val (actorRef, source) = RoomAggregate.createActorRef
-    val newChildren = (accountId, actorRef)
+    val newChildren = (accountId, accountName, actorRef)
     (copy(children = this.children + newChildren), source)
   }
 
 }
 
 object RoomAggregate {
-  def create[T, Coordinate, Operation](authorAccountId: String, roomKey: Option[String])(implicit materializer: Materializer): (RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed]) = {
+  def create[T, Coordinate, Operation](authorAccountId: String, authorAccountName: String, roomKey: Option[String])(implicit materializer: Materializer): (RoomAggregate[T, Coordinate, Operation], Source[T, NotUsed]) = {
     val (actorRef, source) = createActorRef
-    (RoomAggregate((authorAccountId, actorRef), Set.empty, RoomActorRef.create, roomKey) ,source)
+    (RoomAggregate((authorAccountId, authorAccountName, actorRef), Set.empty, RoomActorRef.create, roomKey) ,source)
   }
 
   def createActorRef[T](implicit materializer: Materializer): (ActorRef, Source[T, NotUsed]) = {
