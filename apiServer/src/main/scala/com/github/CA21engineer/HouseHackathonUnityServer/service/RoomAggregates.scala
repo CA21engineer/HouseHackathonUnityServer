@@ -10,9 +10,19 @@ import com.github.CA21engineer.HouseHackathonUnityServer.repository
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
   val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
 
-  def watchSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
+  def watchParentSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
     source.watchTermination()((f, d) => {
       d.foreach(_ => closeRoom(roomId))(materializer.executionContext)
+      f
+    })
+  }
+
+  def watchLeavingRoomSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
+    source.watchTermination()((f, d) => {
+      d.foreach(_ => {
+        // TOD 退室処理
+        ???
+      })(materializer.executionContext)
       f
     })
   }
@@ -39,7 +49,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
     val roomId = generateRoomId()
     val (roomAggregate, source) = RoomAggregate.create[T, Coordinate, Operation](authorAccountId, authorAccountName, roomKey, roomId)
     rooms(roomId) = roomAggregate
-    watchSource(source, roomId)
+    watchParentSource(source, roomId)
   }
 
   def searchVacantRoom(roomKey: Option[String]): Try[(String, RoomAggregate[T, Coordinate, Operation])] = {
@@ -56,11 +66,11 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
             roomRef = roomAggregate.roomRef.copy(
               playingDataSharingActorRef = (
                 roomAggregate.roomRef.playingDataSharingActorRef._1,
-                watchSource(roomAggregate.roomRef.playingDataSharingActorRef._2, roomId)
+                watchParentSource(roomAggregate.roomRef.playingDataSharingActorRef._2, roomId)
               ),
               operationSharingActorRef = (
                 roomAggregate.roomRef.operationSharingActorRef._1,
-                watchSource(roomAggregate.roomRef.operationSharingActorRef._2, roomId)
+                watchParentSource(roomAggregate.roomRef.operationSharingActorRef._2, roomId)
               )
             )
           )
