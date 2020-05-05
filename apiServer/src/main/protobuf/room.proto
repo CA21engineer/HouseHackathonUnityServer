@@ -62,6 +62,7 @@ message Coordinate {
     float y = 2;
     // dateはゲームスタートからの開始ミリ秒(1s = 1000ms)
     int64 date = 3; // ゲームスタートからの経過時間
+    float z = 4;
 }
 
 // require MetaData: string roomid, string accountid
