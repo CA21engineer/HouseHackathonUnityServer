@@ -10,19 +10,23 @@ package room;
 
 message RoomResponse {
     oneof response {
-        CreateRoomResponse createRoomResponse = 1;
-        JoinRoomResponse joinRoomResponse = 2;
-        ReadyResponse readyResponse = 3;
+        JoinRoomResponse joinRoomResponse = 1;
+        ReadyResponse readyResponse = 2;
+        SimpleGameResult result = 3;
+        ErrorType error = 4;
     }
+}
+
+enum ErrorType {
+    UNKNOWN_MESSAGE_TYPE = 0;
+    LOST_CONNECTION_ERROR = 1; // 親or子の接続切れ
+    ROOM_NOT_FOUND_ERROR = 2; // ルームが見つからない, Privateな部屋で合言葉間違いもこれ
 }
 
 message CreateRoomRequest {
     string AccountId = 1;
     string roomKey = 2; // Optional
     string AccountName = 3;
-}
-message CreateRoomResponse {
-    string RoomId = 1;
 }
 
 message JoinRoomRequest {
@@ -80,6 +84,13 @@ message SendResultRequest {
     string RoomId = 1;
     string AccountId = 2;
     repeated Coordinate ghostRecord = 3;
+    bool isGameClear = 4; // ゲームクリアならtrue、ゲームオーバーならfalse
+    int64 date = 5; // 終了時点でのゲームスタートからの経過時間
+}
+
+message SimpleGameResult {
+    bool isGameClear = 1; // ゲームクリアならtrue、ゲームオーバーならfalse
+    int64 date = 2; // 終了時点でのゲームスタートからの経過時間
 }
 
 message Empty {}
