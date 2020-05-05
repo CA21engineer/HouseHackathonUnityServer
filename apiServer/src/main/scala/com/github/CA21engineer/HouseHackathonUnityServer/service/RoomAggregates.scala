@@ -50,31 +50,32 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
       if (newRoomAggregate.isFull) {
         // 操作方向の抽選
         val directions: Seq[Direction] = scala.util.Random.shuffle(List(Direction.Up,Direction.Down,Direction.Left,Direction.Right))
-        
+
+        val allMemberHasDirection = allMember.zip(directions)
+
         val ghostRec = repository.CoordinateRepository.findBestRecord()
         val readyResponse = { direction: Direction =>
           RoomResponse(RoomResponse.Response.ReadyResponse(ReadyResponse(
             roomId = roomId,
             ghostRecord = ghostRec,
-            member = allMember.map(a => Member(a._1)).toSeq,
+            member = allMemberHasDirection.map(a => Member(a._1._2, a._2)).toSeq,
             direction = direction,
             date = java.time.Instant.now().toString
           )))
         }
 
         // 準備完了通知
-        allMember
-          .zip(directions)
+        allMemberHasDirection
           .foreach { a =>
-            println(s"Ready通知: ${a._1._1}")
-            Source(List(readyResponse(a._2))) to Sink.actorRef(a._1._2, Status.Success) run()
-          }
+          println(s"Ready通知: ${a._1._1}")
+          Source(List(readyResponse(a._2))) to Sink.actorRef(a._1._3, Status.Success) run()
+        }
         repository.RoomRepository.create(roomId) // insert db
       }
       this.rooms.update(roomId, newRoomAggregate)
       //TODO 参加完了通知: 後何人
       allMember.foreach { a =>
-        a._2 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
+        a._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(
           roomId = roomId,
           vagrant = newRoomAggregate.vacantPeople
         )))
