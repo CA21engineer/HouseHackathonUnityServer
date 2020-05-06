@@ -94,11 +94,12 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
         println("CoordinateRepository: Create Future")
         Future {
           println("CoordinateRepository: Start Write")
-          CoordinateRepository.recordData(in.roomId, in.ghostRecord)
+          CoordinateRepository.recordData(100, in.roomId, in.ghostRecord)
           println("CoordinateRepository: Complete Write")
         }(materializer.executionContext)
         println("CoordinateRepository: Created Future")
         aggregate.children.foreach(_._3 ! RoomResponse(RoomResponse.Response.Result(SimpleGameResult(in.isGameClear, in.date))))
+
       }
       .fold({
         println("sendResult not found")

@@ -7,8 +7,23 @@ import scalikejdbc._
 object CoordinateRepository {
 
   // reorcdData ゴーストレコードの記録
-  def recordData(roomId: String, datas: Seq[room.Coordinate])(implicit s: DBSession = AutoSession): Unit = {
-    datas.foreach(data => create(roomId, data.x ,data.y, data.z, data.date))
+  def recordData(per: Int, roomId: String, datas: Seq[room.Coordinate])(implicit s: DBSession = AutoSession): Unit = {
+      var newList = Seq[Seq[room.Coordinate]]()
+      var recs = datas
+      while(recs.length > per) {
+          val n = dividList(per, recs)
+          newList :+= n._1
+          recs = n._2
+      }
+      newList.foreach { lst =>
+        val params: Seq[Seq[Any]] = lst.map(data => Seq(java.util.UUID.randomUUID.toString.replaceAll("-", ""), roomId, data.x, data.y, data.z, data.date))
+        SQL("INSERT INTO coordinates(id, room_id, x, y, z, past_millisecond) VALUES (?,?,?,?,?,?)").batch(params: _*).apply()
+      }
+      println(s"finish record data!: roomId = ${roomId}")
+  }
+
+  def dividList(per: Int, lst :Seq[room.Coordinate]): (Seq[room.Coordinate], Seq[room.Coordinate]) = {
+    lst.splitAt(per)
   }
 
   // create coordinateを一件記録
