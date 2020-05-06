@@ -26,7 +26,7 @@ object Main extends App {
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   Class.forName("com.mysql.jdbc.Driver")
-  ConnectionPool.singleton("jdbc:mysql://mysql:3306/unity", "ca21engineer", "pass")
+  ConnectionPool.singleton("jdbc:mysql://mysql:3306/unity?rewriteBatchedStatements=true", "ca21engineer", "pass")
 
   val roomService: PartialFunction[HttpRequest, Future[HttpResponse]] = RoomServicePowerApiHandler.partial(new RoomServicePowerApiImpl)
 

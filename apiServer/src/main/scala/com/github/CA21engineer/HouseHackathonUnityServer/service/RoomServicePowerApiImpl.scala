@@ -99,8 +99,8 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
       .map { aggregate =>
         logger.info(s"SendResultRequest: roomId = ${in.roomId}, accountId = ${in.accountId}, ghostRecordSize = ${in.ghostRecord.size}, isGameClear = ${in.isGameClear}, clearTime = ${in.date}")
         val start = java.time.Instant.now().toEpochMilli
-        Future { CoordinateRepository.recordData(in.roomId, in.ghostRecord) }(materializer.executionContext)
-            .onComplete(_ => logger.info(s"CoordinateRepository: processing time = ${java.time.Instant.now().toEpochMilli - start}"))(materializer.executionContext)
+        Future { CoordinateRepository.recordData(100, in.roomId, in.ghostRecord) }(materializer.executionContext)
+          .onComplete(_ => logger.info(s"CoordinateRepository: processing time = ${java.time.Instant.now().toEpochMilli - start}"))(materializer.executionContext)
         aggregate.children.foreach(_._3 ! RoomResponse(RoomResponse.Response.Result(SimpleGameResult(in.isGameClear, in.date))))
       }
       .fold({
