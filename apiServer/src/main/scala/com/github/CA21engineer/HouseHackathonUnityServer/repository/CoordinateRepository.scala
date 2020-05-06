@@ -42,7 +42,7 @@ object CoordinateRepository {
 
   // findBestRecord 最良のゴーストレコードを取得
   def findBestRecord(implicit s: DBSession = AutoSession): Seq[room.Coordinate] = {
-    val roomList = sql"SELECT room_id FROM coordinates GROUP BY room_id ORDER BY min(past_millisecond) ASC LIMIT 1"
+    val roomList = sql"SELECT room_id FROM coordinates GROUP BY room_id ORDER BY max(past_millisecond) DESC LIMIT 1"
       .map(_.toMap())
       .list()
       .apply()

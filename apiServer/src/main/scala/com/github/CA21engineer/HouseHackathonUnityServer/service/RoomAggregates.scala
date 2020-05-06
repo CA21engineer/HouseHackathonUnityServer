@@ -126,8 +126,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         val allMemberHasDirection = allMember.zip(directions)
 
         // ゴーストレコードの取得
-        val ghostRec = Seq.empty
-        repository.CoordinateRepository.findBestRecord()
+        val ghostRec = repository.CoordinateRepository.findBestRecord()
 
         val readyResponse = { direction: Direction =>
           RoomResponse(RoomResponse.Response.ReadyResponse(ReadyResponse(
