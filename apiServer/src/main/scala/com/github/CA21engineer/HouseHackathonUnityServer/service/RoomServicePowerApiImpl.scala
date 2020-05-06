@@ -91,7 +91,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
       .getRoomAggregate(in.roomId, in.accountId)
       .filter(_.parent._1 == in.accountId)
       .map { aggregate =>
-//        CoordinateRepository.recordData(in.roomId, in.ghostRecord)
+        Future{CoordinateRepository.recordData(100, in.roomId, in.ghostRecord)}(materializer.executionContext)
         aggregate.children.foreach(_._3 ! SimpleGameResult(in.isGameClear, in.date))
       }
       .fold({
