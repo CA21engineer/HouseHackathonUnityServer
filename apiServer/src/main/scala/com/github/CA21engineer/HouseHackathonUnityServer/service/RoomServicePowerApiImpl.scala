@@ -24,7 +24,7 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
       .joinRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
       .getOrElse({
         println("joinRoom not found")
-        Source.empty
+        Source.single(RoomResponse(RoomResponse.Response.Error(ErrorType.ROOM_NOT_FOUND_ERROR)))
       })
   }
 
@@ -91,8 +91,15 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
       .getRoomAggregate(in.roomId, in.accountId)
       .filter(_.parent._1 == in.accountId)
       .map { aggregate =>
-        Future{CoordinateRepository.recordData(100, in.roomId, in.ghostRecord)}(materializer.executionContext)
-        aggregate.children.foreach(_._3 ! SimpleGameResult(in.isGameClear, in.date))
+        println("CoordinateRepository: Create Future")
+        Future {
+          println("CoordinateRepository: Start Write")
+          CoordinateRepository.recordData(100, in.roomId, in.ghostRecord)
+          println("CoordinateRepository: Complete Write")
+        }(materializer.executionContext)
+        println("CoordinateRepository: Created Future")
+        aggregate.children.foreach(_._3 ! RoomResponse(RoomResponse.Response.Result(SimpleGameResult(in.isGameClear, in.date))))
+
       }
       .fold({
         println("sendResult not found")

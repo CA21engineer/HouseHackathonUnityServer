@@ -130,7 +130,7 @@ $ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.p
 親がゲーム結果を送信する
 
 ```bash
-grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"dfa65e98a18340cbb77a4fb9738d9a16","AccountId":"parent","ghostRecord":[{"x":0.1,"y":0.1,"z":0.1,"date":0}]}' ${SERVER_ENDPOINT} room.RoomService/SendResult
+grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"dfa65e98a18340cbb77a4fb9738d9a16","AccountId":"parent","ghostRecord":[{"x":0.1,"y":0.1,"z":0.1,"date":0}],"isGameClear":true,"date":10}' ${SERVER_ENDPOINT} room.RoomService/SendResult
 ```
 
 ## ssh鍵作成
