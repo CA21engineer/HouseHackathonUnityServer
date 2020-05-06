@@ -30,3 +30,9 @@ services:
     depends_on:
       - mysql
       - redis
+
+  reverse-proxy-server:
+    restart: always
+    build: reverseProxyServer
+    ports:
+      - 8080:8080
