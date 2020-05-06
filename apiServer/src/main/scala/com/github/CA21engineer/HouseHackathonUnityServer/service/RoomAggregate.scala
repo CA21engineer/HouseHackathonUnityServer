@@ -24,7 +24,8 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, Acto
       (roomKey, this.roomKey) match {
         case (Some(a), Some(b)) => a == b
         case (Some(_), None) => false
-        case (_, None) => true
+        case (None, Some(_)) => false
+        case (None, None) => true
       }
     }
 
