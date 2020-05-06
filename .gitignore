@@ -32,3 +32,11 @@ fly
 .vagrant/
 deployment/*/Chart.yaml
 account.json
+
+my-ssh-key
+my-ssh-key.pub
+
+# vscode extension
+metals.sbt
+.bloop/
+.metals/

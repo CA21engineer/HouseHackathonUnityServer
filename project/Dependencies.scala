@@ -1,5 +1,17 @@
 import sbt._
 
+object ScalaTest {
+  val version = "org.scalatest" %% "scalatest" % "3.0.5"
+}
+
+object ScalaCheck {
+  val scalaCheck = "org.scalacheck" %% "scalacheck" % "1.14.0"
+}
+
+object ScalaMock {
+  val version = "org.scalamock" %% "scalamock" % "4.1.0"
+}
+
 object Akka {
   private val version     = "2.5.19"
   val actor: ModuleID     = "com.typesafe.akka" %% "akka-actor" % version
