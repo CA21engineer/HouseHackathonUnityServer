@@ -80,7 +80,7 @@ resource "google_compute_firewall" "default" {
 
   allow {
     protocol = "tcp"
-    ports    = ["${var.SSH_PORT}", "18080"]
+    ports    = ["${var.SSH_PORT}", "8080", "18080"]
   }
 
   target_tags = ["allow"]
