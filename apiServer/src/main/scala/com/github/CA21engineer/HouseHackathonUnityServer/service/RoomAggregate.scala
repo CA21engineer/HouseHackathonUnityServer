@@ -47,7 +47,6 @@ case class RoomAggregate[T, Coordinate, Operation](parent: (String, String, Acto
   }
 
   def leaveRoom(accountId: String): RoomAggregate[T, Coordinate, Operation] = {
-    println(s"leaveRoom: $accountId")
     copy(children = this.children.takeWhile(_._1 != accountId))
   }
 

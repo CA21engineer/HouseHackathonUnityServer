@@ -7,8 +7,11 @@ import akka.stream.scaladsl.Source
 import scala.util.{Failure, Success, Try}
 import com.github.CA21engineer.HouseHackathonUnityServer.repository
 import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
+import org.slf4j.{Logger, LoggerFactory}
 
 class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializer) {
+  val logger: Logger = LoggerFactory.getLogger(getClass)
+
   val rooms: scala.collection.mutable.Map[String, RoomAggregate[T, Coordinate, Operation]] = scala.collection.mutable.Map.empty
 
   def watchParentSource[S](source: Source[S, NotUsed], roomId: String): Source[S, NotUsed] = {
@@ -34,7 +37,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
             if (roomAggregate.isFull) sendErrorMessageToEveryOne(roomAggregate)
             else {
               val newRoomAggregate = roomAggregate.leaveRoom(accountId)
-              println(s"LeavingRoom: vacantPeople = ${newRoomAggregate.vacantPeople}")
+              logger.info(s"LeavingRoom: roomId = $roomId, accountId = $accountId, vacantPeople = ${newRoomAggregate.vacantPeople}, children = ${newRoomAggregate.children}")
               this.rooms.update(roomId, newRoomAggregate)
               sendJoinResponse(roomId, newRoomAggregate)
             }
@@ -51,7 +54,6 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
 
   def sendJoinResponse(roomId: String, roomAggregate: RoomAggregate[T, Coordinate, Operation]): Unit = {
     val m = roomAggregate.children + roomAggregate.parent
-    println(s"sendJoinResponse: roomId = $roomId, vagrant = ${roomAggregate.vacantPeople}")
     m.foreach(_._3 ! RoomResponse(RoomResponse.Response.JoinRoomResponse(JoinRoomResponse(roomId = roomId, vagrant = roomAggregate.vacantPeople))))
   }
 
@@ -140,7 +142,7 @@ class RoomAggregates[T, Coordinate, Operation](implicit materializer: Materializ
         // 準備完了通知
         allMemberHasDirection
           .foreach { a =>
-          println(s"Ready通知: ${a._1._1}")
+          logger.info(s"ReadyNotification: accountId = ${a._1._1}, accountName = ${a._1._2}")
           a._1._3 ! readyResponse(a._2)
         }
         repository.RoomRepository.create(roomId) // insert db

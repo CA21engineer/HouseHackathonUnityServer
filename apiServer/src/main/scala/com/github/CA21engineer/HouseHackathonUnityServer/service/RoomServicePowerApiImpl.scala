@@ -7,31 +7,36 @@ import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room._
 import akka.grpc.scaladsl.Metadata
 
 import scala.concurrent.Future
-
 import com.github.CA21engineer.HouseHackathonUnityServer.repository.CoordinateRepository
+import org.slf4j.{Logger, LoggerFactory}
 
 class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomServicePowerApi {
+  val logger: Logger = LoggerFactory.getLogger(getClass)
+
   val roomAggregates = new RoomAggregates[RoomResponse, Coordinate, Operation]()
 
   override def createRoom(in: CreateRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
-    println(s"createRoom: ${in.accountId}, ${in.accountName}, ${in.roomKey}")
-    roomAggregates.createRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
+    val roomKey = if (in.roomKey.nonEmpty) Some(in.roomKey) else None
+    logger.info(s"CreateRoomRequest: accountId = ${in.accountId}, accountName = ${in.accountName}, roomKey = $roomKey")
+    roomAggregates.createRoom(in.accountId, in.accountName, roomKey)
   }
 
   override def joinRoom(in: JoinRoomRequest, metadata: Metadata): Source[RoomResponse, NotUsed] = {
-    println(s"joinRoom: ${in.accountId}, ${in.accountName}, ${in.roomKey}")
+    val roomKey = if (in.roomKey.nonEmpty) Some(in.roomKey) else None
+    logger.info(s"JoinRoomRequest: accountId = ${in.accountId}, accountName = ${in.accountName}, roomKey = $roomKey")
     roomAggregates
-      .joinRoom(in.accountId, in.accountName, if (in.roomKey.nonEmpty) Some(in.roomKey) else None)
+      .joinRoom(in.accountId, in.accountName, roomKey)
       .getOrElse({
-        println("joinRoom not found")
+        logger.error("JoinRoomRequest: failed")
         Source.single(RoomResponse(RoomResponse.Response.Error(ErrorType.ROOM_NOT_FOUND_ERROR)))
       })
   }
 
   override def coordinateSharing(in: Source[Coordinate, NotUsed], metadata: Metadata): Source[Coordinate, NotUsed] = {
+    logger.info(s"CoordinateSharingRequest")
     (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(roomId), Some(accountId)) =>
-        println(s"coordinateSharing: $roomId, $accountId")
+        logger.info(s"CoordinateSharingRequest: roomId = $roomId, accountId = $accountId")
         roomAggregates
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.playingDataSharingActorRef)
@@ -40,68 +45,66 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
             ref._2
           }
           .getOrElse({
-            println("coordinateSharing not found")
+            logger.error("CoordinateSharingRequest: failed")
             Source.empty
           })
       case _ =>
-        println(s"coordinateSharing: meta failed: ${metadata.getText("roomid")}, ${metadata.getText("accountid")}")
+        logger.error(s"CoordinateSharingRequest: meta failed, roomId = ${metadata.getText("roomid")}, accountId = ${metadata.getText("accountid")}")
         Source.empty
     }
   }
 
   override def childOperation(in: Source[Operation, NotUsed], metadata: Metadata): Source[Empty, NotUsed] = {
+    logger.info(s"ChildOperationRequest")
     (metadata.getText("roomid"), metadata.getText("accountid")) match {
       case (Some(roomId), Some(accountId)) =>
-        println(s"childOperation: $roomId, $accountId")
+        logger.info(s"ChildOperationRequest: roomId = $roomId, accountId = $accountId")
         roomAggregates
           .getRoomAggregate(roomId, accountId)
           .map(_.roomRef.operationSharingActorRef._1)
           .map { ref =>
             in.map(a => {
-              println(s"----- childOperation: $a")
+              logger.debug(s"ChildOperationRequest: $a")
               ref ! a
               Empty()
             })
           }
           .getOrElse({
-            println("childOperation not found")
+            logger.error("ChildOperationRequest: failed")
             Source.empty
           })
       case _ =>
-        println(s"childOperation: meta failed: ${metadata.getText("roomid")}, ${metadata.getText("accountid")}")
+        logger.error(s"ChildOperationRequest: meta failed, roomId =  ${metadata.getText("roomid")}, accountId = ${metadata.getText("accountid")}")
         Source.empty
     }
   }
 
   override def parentOperation(in: ParentOperationRequest, metadata: Metadata): Source[Operation, NotUsed] = {
-    println(s"parentOperation: ${in.roomId}, ${in.accountId}")
+    logger.info(s"ParentOperationRequest: roomId = ${in.roomId}, accountId = ${in.accountId}")
     roomAggregates
       .getRoomAggregate(in.roomId, in.accountId)
       .map(_.roomRef.operationSharingActorRef._2)
       .getOrElse({
-        println("parentOperation not found")
+        logger.error("ParentOperationRequest: failed")
         Source.empty
       })
   }
 
   override def sendResult(in: SendResultRequest, metadata: Metadata): Future[Empty] = {
     // 親のみ書き込み可能
-    println(s"sendResult: ${in.roomId}, ${in.accountId}, ${in.ghostRecord}")
+    logger.info(s"SendResultRequest: ${in.roomId}, ${in.accountId}, ${in.ghostRecord}")
     roomAggregates
       .getRoomAggregate(in.roomId, in.accountId)
       .filter(_.parent._1 == in.accountId)
       .map { aggregate =>
-        println("CoordinateRepository: Create Future")
-        Future {
-          println("CoordinateRepository: Start Write")
-          CoordinateRepository.recordData(in.roomId, in.ghostRecord)
-          println("CoordinateRepository: Complete Write")
-        }(materializer.executionContext)
-        println("CoordinateRepository: Created Future")
+        logger.info(s"SendResultRequest: roomId = ${in.roomId}, accountId = ${in.accountId}, ghostRecordSize = ${in.ghostRecord.size}, isGameClear = ${in.isGameClear}, clearTime = ${in.date}")
+        val start = java.time.Instant.now().toEpochMilli
+        Future { CoordinateRepository.recordData(in.roomId, in.ghostRecord) }(materializer.executionContext)
+            .onComplete(_ => logger.info(s"CoordinateRepository: processing time = ${java.time.Instant.now().toEpochMilli - start}"))(materializer.executionContext)
         aggregate.children.foreach(_._3 ! RoomResponse(RoomResponse.Response.Result(SimpleGameResult(in.isGameClear, in.date))))
       }
       .fold({
-        println("sendResult not found")
+        logger.info("SendResultRequest: failed")
         Future.failed[Empty](new Exception("Internal Error!!!"))
       })(_ => Future.successful(Empty()))
   }
