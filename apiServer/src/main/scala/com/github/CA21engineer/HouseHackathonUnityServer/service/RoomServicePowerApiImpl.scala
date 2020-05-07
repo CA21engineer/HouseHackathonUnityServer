@@ -108,4 +108,10 @@ class RoomServicePowerApiImpl(implicit materializer: Materializer) extends RoomS
         Future.failed[Empty](new Exception("Internal Error!!!"))
       })(_ => Future.successful(Empty()))
   }
+
+  // まだ埋まっていない公開部屋数
+  override def getPublicRoom(in: Empty, metadata: Metadata): Future[GetPublicRoomResponse] = {
+    Future.successful(GetPublicRoomResponse(roomAggregates.getPublicRoom))
+  }
+
 }
