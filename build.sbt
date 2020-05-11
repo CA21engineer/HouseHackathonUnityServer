@@ -19,7 +19,7 @@ lazy val apiServer = (project in file("apiServer"))
     dockerUsername := Some("bambootuna"),
     mainClass in (Compile, bashScriptDefines) := Some("com.github.CA21engineer.HouseHackathonUnityServer.apiServer.Main"),
     packageName in Docker := name.value,
-    dockerExposedPorts := Seq(18080),
+    dockerExposedPorts := Seq(18080, 18081),
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime",
   )
   .settings(
@@ -42,6 +42,7 @@ lazy val apiServer = (project in file("apiServer"))
       Akka.slf4j,
       Akka.contrib,
       Akka.`akka-http-crice`,
+      Akka.cors,
       Logback.classic,
       LogstashLogbackEncoder.encoder,
       Config.core,

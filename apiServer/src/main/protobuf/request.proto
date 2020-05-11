@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.github.CA21engineer.HouseHackathonUnityServer.grpc";
+
+import "model.proto";
+
+package request;
+
+
+message CreateRoomRequest {
+    string accountId = 1;
+    string accountName = 2;
+    string roomKey = 3; // Optional
+}
+
+message JoinRoomRequest {
+    string accountId = 1;
+    string accountName = 2;
+    string roomKey = 3; // Optional
+}
+
+message SendResultRequest {
+    repeated model.Coordinate ghostRecord = 1;
+    bool isGameClear = 2; // ゲームクリアならtrue、ゲームオーバーならfalse
+    int64 elapsedTime = 3; // 終了時点でのゲームスタートからの経過時間
+}

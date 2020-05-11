@@ -1,6 +1,6 @@
 package com.github.CA21engineer.HouseHackathonUnityServer.model
 
-case class Coordinate(
+case class CoordinateRecord(
     roomID: String,
     x: Float,
     y: Float,
