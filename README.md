@@ -150,12 +150,12 @@ $ wscat -c "ws://localhost:18080/join_room?accountId=child2&accountName=child2Na
 $ wscat -c "ws://localhost:18080/join_room?accountId=child3&accountName=child3Name"
 
 
+```
 
-
-
-
-
-
+## C# code gen
+```bash
+$ chmod +x ./grpc-code-gen/code-gen-c#.sh
+$ ./grpc-code-gen/code-gen-c#.sh ./apiServer/src/main/protobuf ./pb
 ```
 
 ## ssh鍵作成
