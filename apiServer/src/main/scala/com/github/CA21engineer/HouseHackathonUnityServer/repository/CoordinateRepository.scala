@@ -1,6 +1,6 @@
 package com.github.CA21engineer.HouseHackathonUnityServer.repository
 
-import com.github.CA21engineer.HouseHackathonUnityServer.model.{Room, Coordinate}
+import com.github.CA21engineer.HouseHackathonUnityServer.model.{Room, CoordinateRecord}
 import com.github.CA21engineer.HouseHackathonUnityServer.grpc._
 import scalikejdbc._
 

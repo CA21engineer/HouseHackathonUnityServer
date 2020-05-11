@@ -30,6 +30,7 @@ object Akka {
   val httpTestKit         = "com.typesafe.akka" %% "akka-http-testkit" % httpVersion
 
   val `akka-http-crice` = "de.heikoseeberger" %% "akka-http-circe" % "1.24.3"
+  val cors = "ch.megard" %% "akka-http-cors" % "0.4.3"
 }
 
 object Circe {

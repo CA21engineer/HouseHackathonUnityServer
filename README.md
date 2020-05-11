@@ -133,6 +133,31 @@ $ grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.p
 grpcurl -v -plaintext -import-path . -proto apiServer/src/main/protobuf/room.proto -d '{"RoomId":"dfa65e98a18340cbb77a4fb9738d9a16","AccountId":"parent","ghostRecord":[{"x":0.1,"y":0.1,"z":0.1,"date":0}],"isGameClear":true,"date":10}' ${SERVER_ENDPOINT} room.RoomService/SendResult
 ```
 
+## ws
+```bash
+$ wscat -c ws://localhost:18080/health
+
+
+$ wscat -c "ws://localhost:18080/create_room?accountId=parent&accountName=parentName"
+> {"":""}
+```
+
+```bash
+$ wscat -c "ws://localhost:18080/join_room?accountId=child1&accountName=child1Name"
+> {"direction":{"direction":"Up"}, "strength":0.1}
+
+$ wscat -c "ws://localhost:18080/join_room?accountId=child2&accountName=child2Name"
+$ wscat -c "ws://localhost:18080/join_room?accountId=child3&accountName=child3Name"
+
+
+
+
+
+
+
+
+```
+
 ## ssh鍵作成
 
 `$ ssh-keygen -t rsa -f my-ssh-key -C [任意のsshユーザーネーム]`

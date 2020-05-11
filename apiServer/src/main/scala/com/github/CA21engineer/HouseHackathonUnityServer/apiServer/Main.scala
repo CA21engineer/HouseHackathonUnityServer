@@ -6,12 +6,10 @@ import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.http.scaladsl.UseHttp2.Always
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
-import com.github.CA21engineer.HouseHackathonUnityServer.grpc.room.RoomServicePowerApiHandler
-import com.github.CA21engineer.HouseHackathonUnityServer.service.RoomServicePowerApiImpl
+import com.github.CA21engineer.HouseHackathonUnityServer.service.{RoomAggregates, RoomServiceImpl}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
-
 import scalikejdbc._
 
 object Main extends App {
@@ -28,21 +26,18 @@ object Main extends App {
   Class.forName("com.mysql.jdbc.Driver")
   ConnectionPool.singleton("jdbc:mysql://mysql:3306/unity?rewriteBatchedStatements=true", "ca21engineer", "pass")
 
-  val roomService: PartialFunction[HttpRequest, Future[HttpResponse]] = RoomServicePowerApiHandler.partial(new RoomServicePowerApiImpl)
+  val roomAggregates = new RoomAggregates()
 
-  val serviceHandlers: HttpRequest => Future[HttpResponse] =
-    ServiceHandler.concatOrNotFound(roomService)
+  val restServiceHandlers = new RestServiceHandler(new RoomServiceImpl(roomAggregates))
+  val restBindingFuture = Http().bindAndHandle(
+    handler = restServiceHandlers.toRoutes,
+    interface = "0.0.0.0",
+    port = 18080
+  )
 
-  val bindingFuture =
-    Http().bindAndHandleAsync(
-      handler = serviceHandlers,
-      interface = "0.0.0.0",
-      port = 18080,
-      connectionContext = HttpConnectionContext(http2 = Always)
-    )
 
   sys.addShutdownHook {
-    bindingFuture
+    restBindingFuture
       .flatMap(_.unbind())
       .onComplete(_ => system.terminate())
   }
